@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能通道跳转</title>
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            dark: '#1E293B',
+            light: '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-hover {
+        @apply transition-all duration-200 hover:shadow-md hover:bg-primary/5;
+      }
+      .btn-effect {
+        @apply transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95;
+      }
+    }
+  </style>
+  <!-- 全局样式 -->
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      scroll-behavior: smooth;
+    }
+    .countdown-circle {
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1s linear;
+    }
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-light text-dark min-h-screen">
+  <!-- 主容器 -->
+  <div class="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
+    <!-- 头部 -->
+    <header class="text-center mb-16">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6">
+        <i class="fa fa-link text-primary text-2xl"></i>
+      </div>
+      <h1 class="text-2xl md:text-3xl font-bold mb-3">智能通道选择</h1>
+      <p class="text-gray-600 max-w-md mx-auto">自动检测并跳转至最优访问节点</p>
+    </header>
+
+    <!-- 自动跳转区域 -->
+    <section class="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-12">
+      <div class="text-center mb-8">
+        <h2 class="text-lg font-semibold mb-4">即将自动跳转</h2>
+        <div class="flex items-center justify-center">
+          <div class="relative mr-4">
+            <svg class="w-16 h-16" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="#E2E8F0" stroke-width="3"/>
+              <circle id="countdown-circle" class="countdown-circle" cx="50" cy="50" r="45" fill="none" stroke="#3B82F6" stroke-width="3"/>
+            </svg>
+            <span id="countdown" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 font-bold text-lg">5</span>
+          </div>
+          <p class="text-gray-500">秒后跳转至最优通道</p>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-4">
+        <button id="skip-countdown" class="flex-1 bg-primary text-white py-3 px-6 rounded-lg font-medium btn-effect flex items-center justify-center">
+          <i class="fa fa-arrow-right mr-2"></i> 立即跳转
+        </button>
+        <button id="manual-select" class="flex-1 border border-gray-200 text-dark py-3 px-6 rounded-lg font-medium btn-effect flex items-center justify-center">
+          <i class="fa fa-list mr-2"></i> 手动选择
+        </button>
+      </div>
+    </section>
+
+    <!-- 通道选择区域 (默认隐藏) -->
+    <section id="channels" class="hidden mb-12">
+      <h2 class="text-lg font-semibold mb-6 text-center">选择访问通道</h2>
+      <div class="grid gap-4" id="channels-container">
+        <!-- 通道将通过JavaScript动态生成 -->
+      </div>
+    </section>
+
+    <!-- 关于与联系 (极简版) -->
+    <footer class="text-center text-gray-500 text-sm mt-auto">
+      <div class="mb-4">
+        <a href="#" class="hover:text-primary transition-colors">关于我们</a>
+        <span class="mx-2">|</span>
+        <a href="mailto:support@example.com" class="hover:text-primary transition-colors">联系支持</a>
+      </div>
+      <p>&copy; 2024 智能通道跳转. 保留所有权利.</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // ==============================
+    // 配置 - 所有节点信息清晰可见，便于修改
+    // ==============================
+    const channels = [
+      {
+        id: 'main',
+        name: '主站点无CDN',
+        url: 'https://xz.kyou.xyz/', // 主站点链接
+        tag: '推荐',
+        tagColor: 'bg-green-100 text-green-800',
+        icon: 'fa-server',
+        isDefault: true // 设为默认最优通道
+      },
+      {
+        id: 'cloudflare',
+        name: 'Cloudflare节点',
+        url: 'https://xz.lidz.netlib.re/', // Cloudflare节点链接
+        tag: 'CDN',
+        tagColor: 'bg-blue-100 text-blue-800',
+        icon: 'fa-cloud'
+      },
+      {
+        id: 'optimized',
+        name: '优选节点',
+        url: 'https://cf.kyou.xyz/', // 优选节点链接
+        tag: '优选',
+        tagColor: 'bg-purple-100 text-purple-800',
+        icon: 'fa-star'
+      }
+    ];
+
+    // ==============================
+    // 全局变量
+    // ==============================
+    let bestChannel = channels.find(channel => channel.isDefault) || channels[0];
+    const countdownElement = document.getElementById('countdown');
+    const countdownCircle = document.getElementById('countdown-circle');
+    const skipCountdownBtn = document.getElementById('skip-countdown');
+    const manualSelectBtn = document.getElementById('manual-select');
+    const channelsSection = document.getElementById('channels');
+    const channelsContainer = document.getElementById('channels-container');
+    let countdown = 5; // 倒计时时间改为5秒
+
+    // ==============================
+    // 初始化
+    // ==============================
+    document.addEventListener('DOMContentLoaded', () => {
+      renderChannels(); // 渲染通道列表
+      testAllChannels(); // 测试所有通道的延迟和在线状态
+      startCountdown(); // 启动倒计时
+      bindEvents(); // 绑定事件
+    });
+
+    // ==============================
+    // 渲染通道列表
+    // ==============================
+    function renderChannels() {
+      channelsContainer.innerHTML = '';
+      
+      channels.forEach(channel => {
+        const channelElement = document.createElement('div');
+        channelElement.id = `channel-${channel.id}`;
+        channelElement.className = 'bg-white rounded-lg p-5 border border-gray-100 card-hover';
+        channelElement.innerHTML = `
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center">
+              <i class="fa ${channel.icon} text-primary mr-3"></i>
+              <span class="font-medium">${channel.name}</span>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full ${channel.tagColor}">${channel.tag}</span>
+          </div>
+          <div class="flex items-center text-sm text-gray-500 mb-4">
+            <span class="mr-4 loading-status">
+              <i class="fa fa-spinner loading-spinner mr-1"></i> 检测中...
+            </span>
+            <span class="status-indicator">
+              <i class="fa fa-circle-o-notch loading-spinner mr-1"></i> 连接中...
+            </span>
+          </div>
+          <a href="${channel.url}" target="_blank" class="block w-full bg-primary/10 text-primary text-center py-2 rounded-lg font-medium btn-effect">
+            访问通道
+          </a>
+        `;
+        channelsContainer.appendChild(channelElement);
+      });
+    }
+
+    // ==============================
+    // 测试所有通道
+    // ==============================
+    async function testAllChannels() {
+      const testPromises = channels.map(channel => testChannel(channel));
+      await Promise.all(testPromises);
+      
+      // 根据延迟排序，选择最优通道
+      const onlineChannels = channels.filter(channel => channel.isOnline);
+      if (onlineChannels.length > 0) {
+        bestChannel = onlineChannels.sort((a, b) => a.latency - b.latency)[0];
+        
+        // 标记最优通道
+        document.querySelectorAll('.channel-card').forEach(card => {
+          card.classList.remove('border-primary');
+        });
+        const bestChannelCard = document.getElementById(`channel-${bestChannel.id}`);
+        if (bestChannelCard) {
+          bestChannelCard.classList.add('border-primary');
+        }
+      }
+    }
+
+    // ==============================
+    // 测试单个通道的延迟和在线状态
+    // ==============================
+    async function testChannel(channel) {
+      const statusElement = document.querySelector(`#channel-${channel.id} .loading-status`);
+      const indicatorElement = document.querySelector(`#channel-${channel.id} .status-indicator`);
+      
+      try {
+        const startTime = performance.now();
+        
+        // 发送HEAD请求测试连通性（更快，不下载内容）
+        const response = await fetch(channel.url, {
+          method: 'HEAD',
+          mode: 'cors',
+          cache: 'no-cache',
+          timeout: 5000 // 5秒超时
+        });
+        
+        const endTime = performance.now();
+        const latency = Math.round(endTime - startTime);
+        
+        // 更新通道状态
+        channel.latency = latency;
+        channel.isOnline = response.ok;
+        
+        // 更新UI
+        if (channel.isOnline) {
+          statusElement.innerHTML = `<i class="fa fa-signal text-green-500 mr-1"></i> ${latency}ms`;
+          indicatorElement.innerHTML = `<i class="fa fa-check-circle text-green-500 mr-1"></i> 在线`;
+        } else {
+          statusElement.innerHTML = `<i class="fa fa-signal text-red-500 mr-1"></i> 超时`;
+          indicatorElement.innerHTML = `<i class="fa fa-times-circle text-red-500 mr-1"></i> 离线`;
+        }
+        
+      } catch (error) {
+        // 测试失败
+        channel.latency = Infinity;
+        channel.isOnline = false;
+        
+        statusElement.innerHTML = `<i class="fa fa-signal text-red-500 mr-1"></i> 失败`;
+        indicatorElement.innerHTML = `<i class="fa fa-times-circle text-red-500 mr-1"></i> 不可用`;
+      }
+    }
+
+    // ==============================
+    // 启动倒计时
+    // ==============================
+    function startCountdown() {
+      updateCircle(0);
+      
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        countdownElement.textContent = countdown;
+        
+        // 更新圆环进度
+        const percent = ((5 - countdown) / 5) * 100;
+        updateCircle(percent);
+        
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          redirectToBestChannel();
+        }
+      }, 1000);
+    }
+
+    // ==============================
+    // 更新倒计时圆环
+    // ==============================
+    function updateCircle(percent) {
+      const offset = 283 - (percent / 100) * 283;
+      countdownCircle.style.strokeDashoffset = offset;
+    }
+
+    // ==============================
+    // 绑定事件
+    // ==============================
+    function bindEvents() {
+      // 立即跳转
+      skipCountdownBtn.addEventListener('click', () => {
+        redirectToBestChannel();
+      });
+      
+      // 手动选择
+      manualSelectBtn.addEventListener('click', () => {
+        channelsSection.classList.toggle('hidden');
+        // 如果显示手动选择，停止倒计时
+        if (!channelsSection.classList.contains('hidden')) {
+          countdownElement.textContent = '—';
+          updateCircle(100);
+        } else {
+          // 如果隐藏，重新开始倒计时
+          countdown = 5;
+          countdownElement.textContent = countdown;
+          startCountdown();
+        }
+      });
+    }
+
+    // ==============================
+    // 跳转到最优通道
+    // ==============================
+    function redirectToBestChannel() {
+      // 模拟加载效果
+      skipCountdownBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 跳转中...';
+      skipCountdownBtn.disabled = true;
+      
+      setTimeout(() => {
+        window.location.href = bestChannel.url;
+      }, 500);
+    }
+  </script>
+</body>
+</html>
