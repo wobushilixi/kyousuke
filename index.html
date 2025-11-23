@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智能通道跳转</title>
-  <!-- 引入外部资源 -->
+  <title>李喜的资源站 - 智能通道跳转</title>
+  <!-- 仅保留必要外部资源 -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  <!-- 配置Tailwind -->
+  <!-- 配置Tailwind（内联，减少请求） -->
   <script>
     tailwind.config = {
       theme: {
@@ -36,12 +35,15 @@
       .btn-effect {
         @apply transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95;
       }
+      .number-transition {
+        @apply transition-all duration-1000 ease-in-out;
+      }
     }
   </style>
-  <!-- 全局样式 -->
+  <!-- 全局样式（内联，减少请求） -->
   <style>
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       scroll-behavior: smooth;
     }
     .countdown-circle {
@@ -49,7 +51,7 @@
       stroke-dashoffset: 283;
       transform: rotate(-90deg);
       transform-origin: 50% 50%;
-      transition: stroke-dashoffset 1s linear;
+      transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); /* 平滑过渡曲线 */
     }
     .loading-spinner {
       animation: spin 1s linear infinite;
@@ -58,17 +60,31 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    /* 数字变化动画 */
+    @keyframes countUp {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    .count-animate {
+      animation: countUp 0.5s ease-out forwards;
+    }
+    /* Logo样式 */
+    .custom-logo {
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid rgba(59, 130, 246, 0.2);
+    }
   </style>
 </head>
 <body class="bg-light text-dark min-h-screen">
   <!-- 主容器 -->
   <div class="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
-    <!-- 头部 -->
+    <!-- 头部 - 替换为自定义Logo -->
     <header class="text-center mb-16">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6">
-        <i class="fa fa-link text-primary text-2xl"></i>
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6 overflow-hidden">
+        <img src="https://img.cdn1.vip/i/6921348cd5a96_1763783820.webp" alt="Logo" class="custom-logo w-full h-full" />
       </div>
-      <h1 class="text-2xl md:text-3xl font-bold mb-3">智能通道选择</h1>
+      <h1 class="text-2xl md:text-3xl font-bold mb-3">李喜的资源站</h1>
       <p class="text-gray-600 max-w-md mx-auto">自动检测并跳转至最优访问节点</p>
     </header>
 
@@ -84,7 +100,7 @@
             </svg>
             <span id="countdown" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 font-bold text-lg">5</span>
           </div>
-          <p class="text-gray-500">秒后跳转至最优通道</p>
+          <p class="text-gray-500">秒后跳转至主站点</p>
         </div>
       </div>
       <div class="flex flex-col sm:flex-row gap-4">
@@ -112,11 +128,11 @@
         <span class="mx-2">|</span>
         <a href="mailto:support@example.com" class="hover:text-primary transition-colors">联系支持</a>
       </div>
-      <p>&copy; 2024 智能通道跳转. 保留所有权利.</p>
+      <p>&copy; 2024 李喜的资源站. 保留所有权利.</p>
     </footer>
   </div>
 
-  <!-- JavaScript -->
+  <!-- JavaScript（内联，减少请求） -->
   <script>
     // ==============================
     // 配置 - 所有节点信息清晰可见，便于修改
@@ -125,19 +141,20 @@
       {
         id: 'main',
         name: '主站点无CDN',
-        url: 'https://xz.kyou.xyz/', // 主站点链接
+        url: 'https://xz.kyou.xyz/', // 主站点链接（最高权重）
         tag: '推荐',
         tagColor: 'bg-green-100 text-green-800',
         icon: 'fa-server',
-        isDefault: true // 设为默认最优通道
+        weight: 100 // 最高权重
       },
       {
         id: 'cloudflare',
         name: 'Cloudflare节点',
-        url: 'https://xz.lidz.netlib.re/', // Cloudflare节点链接
+        url: 'https://cloudflare.kyou.xyz/', // Cloudflare节点链接
         tag: 'CDN',
         tagColor: 'bg-blue-100 text-blue-800',
-        icon: 'fa-cloud'
+        icon: 'fa-cloud',
+        weight: 50 // 中等权重
       },
       {
         id: 'optimized',
@@ -145,21 +162,26 @@
         url: 'https://cf.kyou.xyz/', // 优选节点链接
         tag: '优选',
         tagColor: 'bg-purple-100 text-purple-800',
-        icon: 'fa-star'
+        icon: 'fa-star',
+        weight: 75 // 较高权重
       }
     ];
 
     // ==============================
     // 全局变量
     // ==============================
-    let bestChannel = channels.find(channel => channel.isDefault) || channels[0];
+    const mainChannel = channels.find(channel => channel.id === 'main'); // 主站点优先
+    let bestChannel = mainChannel; // 默认选择主站点
     const countdownElement = document.getElementById('countdown');
     const countdownCircle = document.getElementById('countdown-circle');
     const skipCountdownBtn = document.getElementById('skip-countdown');
     const manualSelectBtn = document.getElementById('manual-select');
     const channelsSection = document.getElementById('channels');
     const channelsContainer = document.getElementById('channels-container');
-    let countdown = 5; // 倒计时时间改为5秒
+    let countdown = 5; // 初始倒计时5秒
+    let countdownInterval; // 倒计时计时器
+    const PING_COUNT = 3; // 每个节点ping测试次数
+    const PING_INTERVAL = 100; // ping间隔时间(ms)
 
     // ==============================
     // 初始化
@@ -172,90 +194,134 @@
     });
 
     // ==============================
-    // 渲染通道列表
+    // 渲染通道列表（减少DOM操作）
     // ==============================
     function renderChannels() {
-      channelsContainer.innerHTML = '';
+      let channelsHTML = '';
       
       channels.forEach(channel => {
-        const channelElement = document.createElement('div');
-        channelElement.id = `channel-${channel.id}`;
-        channelElement.className = 'bg-white rounded-lg p-5 border border-gray-100 card-hover';
-        channelElement.innerHTML = `
-          <div class="flex justify-between items-center mb-3">
-            <div class="flex items-center">
-              <i class="fa ${channel.icon} text-primary mr-3"></i>
-              <span class="font-medium">${channel.name}</span>
+        channelsHTML += `
+          <div id="channel-${channel.id}" class="bg-white rounded-lg p-5 border border-gray-100 card-hover ${channel.id === 'main' ? 'border-primary' : ''}">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center">
+                <i class="fa ${channel.icon} text-primary mr-3"></i>
+                <span class="font-medium">${channel.name}</span>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full ${channel.tagColor}">${channel.tag}</span>
             </div>
-            <span class="text-xs px-2 py-1 rounded-full ${channel.tagColor}">${channel.tag}</span>
+            <div class="flex items-center text-sm text-gray-500 mb-4">
+              <span class="mr-4 loading-status-${channel.id}">
+                <i class="fa fa-spinner loading-spinner mr-1"></i> 检测中...
+              </span>
+              <span class="status-indicator-${channel.id}">
+                <i class="fa fa-circle-o-notch loading-spinner mr-1"></i> 连接中...
+              </span>
+            </div>
+            <a href="${channel.url}" target="_blank" class="block w-full bg-primary/10 text-primary text-center py-2 rounded-lg font-medium btn-effect">
+              访问通道
+            </a>
           </div>
-          <div class="flex items-center text-sm text-gray-500 mb-4">
-            <span class="mr-4 loading-status">
-              <i class="fa fa-spinner loading-spinner mr-1"></i> 检测中...
-            </span>
-            <span class="status-indicator">
-              <i class="fa fa-circle-o-notch loading-spinner mr-1"></i> 连接中...
-            </span>
-          </div>
-          <a href="${channel.url}" target="_blank" class="block w-full bg-primary/10 text-primary text-center py-2 rounded-lg font-medium btn-effect">
-            访问通道
-          </a>
         `;
-        channelsContainer.appendChild(channelElement);
       });
+      
+      channelsContainer.innerHTML = channelsHTML;
     }
 
     // ==============================
-    // 测试所有通道
+    // 测试所有通道（优化并发请求）
     // ==============================
     async function testAllChannels() {
-      const testPromises = channels.map(channel => testChannel(channel));
+      // 优先测试主站点
+      await pingChannel(mainChannel);
+      
+      // 再测试其他站点（并发）
+      const otherChannels = channels.filter(channel => channel.id !== 'main');
+      const testPromises = otherChannels.map(channel => pingChannel(channel));
       await Promise.all(testPromises);
       
-      // 根据延迟排序，选择最优通道
-      const onlineChannels = channels.filter(channel => channel.isOnline);
-      if (onlineChannels.length > 0) {
-        bestChannel = onlineChannels.sort((a, b) => a.latency - b.latency)[0];
-        
-        // 标记最优通道
-        document.querySelectorAll('.channel-card').forEach(card => {
-          card.classList.remove('border-primary');
-        });
-        const bestChannelCard = document.getElementById(`channel-${bestChannel.id}`);
-        if (bestChannelCard) {
-          bestChannelCard.classList.add('border-primary');
+      // 权重优先选择逻辑：主站点可用则优先选择，否则按权重和延迟排序
+      if (mainChannel.isOnline) {
+        bestChannel = mainChannel;
+      } else {
+        const onlineChannels = channels.filter(channel => channel.isOnline);
+        if (onlineChannels.length > 0) {
+          // 先按权重排序（降序），再按延迟排序（升序）
+          bestChannel = onlineChannels.sort((a, b) => {
+            if (a.weight !== b.weight) {
+              return b.weight - a.weight;
+            }
+            return a.latency - b.latency;
+          })[0];
         }
+      }
+      
+      // 标记最优通道
+      document.querySelectorAll('[id^="channel-"]').forEach(card => {
+        card.classList.remove('border-primary');
+      });
+      const bestChannelCard = document.getElementById(`channel-${bestChannel.id}`);
+      if (bestChannelCard) {
+        bestChannelCard.classList.add('border-primary');
       }
     }
 
     // ==============================
-    // 测试单个通道的延迟和在线状态
+    // 增强版ping测试（多轮测试提高准确性）
     // ==============================
-    async function testChannel(channel) {
-      const statusElement = document.querySelector(`#channel-${channel.id} .loading-status`);
-      const indicatorElement = document.querySelector(`#channel-${channel.id} .status-indicator`);
+    async function pingChannel(channel) {
+      const statusElement = document.querySelector(`.loading-status-${channel.id}`);
+      const indicatorElement = document.querySelector(`.status-indicator-${channel.id}`);
+      const latencies = [];
+      let successCount = 0;
       
       try {
-        const startTime = performance.now();
+        // 执行多轮ping测试
+        for (let i = 0; i < PING_COUNT; i++) {
+          // 更新测试状态
+          statusElement.innerHTML = `<i class="fa fa-spinner loading-spinner mr-1"></i> 检测中(${i+1}/${PING_COUNT})`;
+          
+          const startTime = performance.now();
+          
+          // 使用HEAD请求模拟ping，减少数据传输
+          const response = await fetch(channel.url, {
+            method: 'HEAD',
+            mode: 'cors',
+            cache: 'no-cache',
+            timeout: 3000 // 单次ping超时时间
+          });
+          
+          const endTime = performance.now();
+          const latency = Math.round(endTime - startTime);
+          
+          if (response.ok) {
+            latencies.push(latency);
+            successCount++;
+          }
+          
+          // 每轮ping之间的间隔
+          if (i < PING_COUNT - 1) {
+            await new Promise(resolve => setTimeout(resolve, PING_INTERVAL));
+          }
+        }
         
-        // 发送HEAD请求测试连通性（更快，不下载内容）
-        const response = await fetch(channel.url, {
-          method: 'HEAD',
-          mode: 'cors',
-          cache: 'no-cache',
-          timeout: 5000 // 5秒超时
-        });
-        
-        const endTime = performance.now();
-        const latency = Math.round(endTime - startTime);
-        
-        // 更新通道状态
-        channel.latency = latency;
-        channel.isOnline = response.ok;
+        // 计算有效延迟的平均值（去除异常值）
+        if (latencies.length > 0) {
+          // 排序后去掉最高和最低值，取中间值的平均
+          latencies.sort((a, b) => a - b);
+          const filteredLatencies = latencies.length > 2 
+            ? latencies.slice(1, -1) // 去掉最高最低
+            : latencies;
+          
+          channel.latency = Math.round(filteredLatencies.reduce((sum, val) => sum + val, 0) / filteredLatencies.length);
+          channel.isOnline = successCount / PING_COUNT >= 0.5; // 成功率≥50%视为在线
+        } else {
+          channel.latency = Infinity;
+          channel.isOnline = false;
+        }
         
         // 更新UI
         if (channel.isOnline) {
-          statusElement.innerHTML = `<i class="fa fa-signal text-green-500 mr-1"></i> ${latency}ms`;
+          statusElement.innerHTML = `<i class="fa fa-signal text-green-500 mr-1"></i> ${channel.latency}ms`;
           indicatorElement.innerHTML = `<i class="fa fa-check-circle text-green-500 mr-1"></i> 在线`;
         } else {
           statusElement.innerHTML = `<i class="fa fa-signal text-red-500 mr-1"></i> 超时`;
@@ -273,18 +339,36 @@
     }
 
     // ==============================
-    // 启动倒计时
+    // 启动倒计时（支持动态修改时间和动画）
     // ==============================
     function startCountdown() {
-      updateCircle(0);
+      // 清除现有计时器
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
       
-      const countdownInterval = setInterval(() => {
+      // 更新圆环初始状态
+      const totalTime = countdownElement.dataset.original || countdown;
+      const elapsedTime = totalTime - countdown;
+      const percent = (elapsedTime / totalTime) * 100;
+      updateCircle(percent);
+      
+      // 启动新计时器
+      countdownInterval = setInterval(() => {
         countdown--;
+        
+        // 添加数字变化动画
+        countdownElement.classList.add('count-animate');
+        setTimeout(() => {
+          countdownElement.classList.remove('count-animate');
+        }, 500);
+        
         countdownElement.textContent = countdown;
         
         // 更新圆环进度
-        const percent = ((5 - countdown) / 5) * 100;
-        updateCircle(percent);
+        const currentTotal = countdownElement.dataset.original || (countdown + 1);
+        const currentPercent = ((currentTotal - countdown) / currentTotal) * 100;
+        updateCircle(currentPercent);
         
         if (countdown <= 0) {
           clearInterval(countdownInterval);
@@ -294,11 +378,37 @@
     }
 
     // ==============================
-    // 更新倒计时圆环
+    // 更新倒计时圆环（流畅过渡）
     // ==============================
     function updateCircle(percent) {
       const offset = 283 - (percent / 100) * 283;
       countdownCircle.style.strokeDashoffset = offset;
+    }
+
+    // ==============================
+    // 平滑切换倒计时数字（5→20动画）
+    // ==============================
+    function smoothSwitchCountdown(from, to) {
+      // 清除现有计时器
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+      
+      // 数字变化动画
+      countdownElement.classList.add('count-animate');
+      setTimeout(() => {
+        countdown = to;
+        countdownElement.textContent = to;
+        countdownElement.classList.remove('count-animate');
+      }, 300);
+      
+      // 圆环平滑过渡
+      updateCircle(0);
+      
+      // 重启倒计时
+      setTimeout(() => {
+        startCountdown();
+      }, 500);
     }
 
     // ==============================
@@ -307,36 +417,51 @@
     function bindEvents() {
       // 立即跳转
       skipCountdownBtn.addEventListener('click', () => {
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
         redirectToBestChannel();
       });
       
-      // 手动选择
+      // 手动选择 - 切换显示并修改倒计时为20秒（带动画）
       manualSelectBtn.addEventListener('click', () => {
-        channelsSection.classList.toggle('hidden');
-        // 如果显示手动选择，停止倒计时
-        if (!channelsSection.classList.contains('hidden')) {
-          countdownElement.textContent = '—';
-          updateCircle(100);
+        const isHidden = channelsSection.classList.contains('hidden');
+        
+        if (isHidden) {
+          // 显示通道列表，倒计时从5秒平滑切换到20秒
+          channelsSection.classList.remove('hidden');
+          
+          // 保存原始倒计时时间，用于进度计算
+          countdownElement.dataset.original = 20;
+          
+          // 平滑切换数字和动画
+          smoothSwitchCountdown(5, 20);
+          
         } else {
-          // 如果隐藏，重新开始倒计时
-          countdown = 5;
-          countdownElement.textContent = countdown;
-          startCountdown();
+          // 隐藏通道列表，从20秒平滑恢复为5秒
+          channelsSection.classList.add('hidden');
+          
+          // 恢复原始倒计时
+          countdownElement.dataset.original = 5;
+          
+          // 平滑切换数字和动画
+          smoothSwitchCountdown(20, 5);
         }
       });
     }
 
     // ==============================
-    // 跳转到最优通道
+    // 跳转到最优通道（主站点优先）
     // ==============================
     function redirectToBestChannel() {
       // 模拟加载效果
       skipCountdownBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 跳转中...';
       skipCountdownBtn.disabled = true;
       
+      // 确保跳转到最优通道（主站点优先）
       setTimeout(() => {
         window.location.href = bestChannel.url;
-      }, 500);
+      }, 300);
     }
   </script>
 </body>
