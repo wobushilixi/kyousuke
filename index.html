@@ -18,7 +18,7 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#007AFF', // Blue
+                        primary: '#007AFF',
                         dark: '#1D1D1F',
                         light: '#F5F5F7'
                     },
@@ -36,7 +36,7 @@
             transition: all 200ms; 
             transform: scale(1); 
             box-shadow: 0 4px 6px rgba(0, 122, 255, 0.2); 
-            white-space: nowrap; /* 修复点：强制不换行 */
+            white-space: nowrap; /* 确保文字不换行 */
         }
         .btn-style:active { transform: scale(0.98); }
         .icon-btn { width: 40px; height: 40px; border-radius: 9999px; background-color: rgba(255,255,255,0.7); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; transition: all 200ms; cursor: pointer; font-size: 1.125rem; }
@@ -78,7 +78,7 @@
                 </button>
                 <a href="https://qm.qq.com/q/LhZz1nJVGa" target="_blank" class="icon-btn" aria-label="跳转到 QQ 群">
                     <i class="fa fa-qq"></i>
-                </button>
+                </a>
             </div>
         </header>
 
@@ -138,11 +138,11 @@
             emailAddress: "admin@kyou.xyz", 
             originalText: "智能检测 · 极速直达",
             colors: {
-                high: '#007AFF', // Blue
-                medium: '#FFC000', // Yellow/Orange
-                low: '#FF3B30' // Red
+                high: '#007AFF',
+                medium: '#FFC000',
+                low: '#FF3B30'
             },
-            TEST_COUNT: 5 // 测速次数
+            TEST_COUNT: 5
         };
 
         // ---------------- 全局变量 ----------------
@@ -151,7 +151,7 @@
         let countdownInterval = null;
         let isTesting = true;
         let isPaused = false;
-        let speedTier = 2; // 3:Fast, 2:Medium, 1:Slow
+        let speedTier = 2; 
 
         const el = {
             countdown: document.getElementById('countdown'),
@@ -168,6 +168,7 @@
         // ---------------- PWA: Service Worker 注册 ----------------
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // Service Worker 脚本必须是外部文件: /sw.js
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then(reg => console.log('SW Registered:', reg.scope))
                     .catch(err => console.error('SW Registration Failed:', err));
@@ -182,8 +183,7 @@
             bindEvents();
         });
 
-        // ---------------- 核心测速逻辑：5次测试取中位数平均 ----------------
-        
+        // ---------------- 核心测速逻辑 ----------------
         function pingChannel(url, signal) {
             const start = performance.now();
             return fetch(url, { 
@@ -234,7 +234,6 @@
             localStorage.setItem('last_best_channel_id', bestChannel.id);
         }
         
-        // ---------------- 动态颜色进阶 (TTFB Integration) ----------------
         function processResults() {
             const online = channels.filter(c => c.isOnline);
             if (online.length > 0) {
@@ -249,6 +248,7 @@
             }
             updateBestUI();
             
+            // TTFB 动态颜色逻辑
             if (bestChannel.isOnline && bestChannel.latency < 100) {
                 speedTier = 3; 
             } else if (bestChannel.isOnline && bestChannel.latency < 350) {
@@ -282,99 +282,32 @@
             el.circle.style.stroke = color;
         }
 
-        // ---------------- UI/A11y/Toast/Helpers ----------------
+        // ---------------- UI/Helper Functions (确保它们全部存在) ----------------
 
-        function updateBestUI() {
-            const ms = (bestChannel.latency && bestChannel.latency < 9999) ? bestChannel.latency + 'ms' : '优选';
-            const channelName = bestChannel.name; // 获取通道名称
-            
-            el.bestName.textContent = `${channelName} (${ms})`;
-            
-            // 修复点：确保按钮文字在一行，使用 Flex 居中，并将通道名称字体略微缩小
-            el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 <span class="text-base/loose font-semibold">${channelName}</span>`; 
-
-            if (!el.section.classList.contains('hidden')) renderRealChannels();
+        function startCoreLogic() {
+            startCountdown();
+            runBrowserSpeedTest();
         }
 
-        function renderRealChannels() {
-            const anyOnline = channels.some(c => c.isOnline);
-
-            el.container.innerHTML = channels.map(c => {
-                let latClass = 'text-gray-400';
-                let latText = '检测中...';
-                
-                if (!isTesting && c.latency !== undefined) {
-                    if (!c.isOnline) { 
-                        latClass = 'text-red-500 font-medium'; 
-                        latText = '连接失败/超时'; 
-                    } else {
-                        if (c.latency < 100) latClass = 'text-green-500 font-bold';
-                        else if (c.latency < 300) latClass = 'text-green-600 font-medium';
-                        else if (c.latency < 800) latClass = 'text-yellow-600 font-medium';
-                        else latClass = 'text-red-500 font-medium';
-                        latText = c.latency + 'ms';
-                    }
-                }
-
-                const isBest = c.id === bestChannel.id;
-                const activeClass = isBest ? 'border-primary bg-blue-50/30 ring-1 ring-primary/20' : 'border-gray-100 hover:border-blue-200';
-                
-                return `
-                <div class="bg-white rounded-2xl p-4 border ${activeClass} transition-all duration-200 cursor-pointer" onclick="selectChannel('${c.id}')">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary text-lg">
-                                <i class="fa ${c.icon}"></i>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-gray-800">${c.name}</span>
-                                    ${isBest ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-primary text-white">推荐</span>` : ''}
-                                </div>
-                                <div class="text-xs text-gray-400 mt-0.5">${c.tag}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center text-sm ${latClass}">
-                            ${c.isOnline ? '<i class="fa fa-signal text-[10px] mr-1.5 opacity-60"></i>' : ''}
-                            ${latText}
-                        </div>
-                    </div>
-                </div>
-                `;
-            }).join('');
-            
-            if (!anyOnline) {
-                el.skipBtn.disabled = true;
-                el.skipBtn.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i> 所有节点离线，请稍后再试`;
-                el.skipBtn.classList.add('bg-gray-400', 'hover:bg-gray-400');
-                
-                if (countdownInterval) clearInterval(countdownInterval);
-                el.countdown.textContent = '❌';
-                el.bestName.textContent = '网络中断';
-            } else {
-                 el.skipBtn.disabled = false;
-                 el.skipBtn.classList.remove('bg-gray-400', 'hover:bg-gray-400');
-            }
-
-            isTesting = false;
-        }
-        
         function startCountdown() {
             if (countdownInterval !== null) clearInterval(countdownInterval);
             const total = parseInt(el.countdown.dataset.total || countdown);
+            
             countdownInterval = setInterval(() => {
                 countdown--;
                 switchNumberAnim(countdown);
+                
                 const percent = ((total - countdown) / total) * 100;
                 updateCircle(percent);
+                
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
                     doRedirect(bestChannel);
                 }
             }, 1000);
         }
-        
-        function switchNumberAnim(val) { 
+
+        function switchNumberAnim(val) {
             el.countdown.classList.remove('count-active');
             el.countdown.classList.add('count-exit');
             setTimeout(() => {
@@ -388,20 +321,19 @@
             }, 200);
         }
         
-        function loadSmartCache() { 
-            try {
-                const cachedId = localStorage.getItem('last_best_channel_id');
-                if (cachedId) {
-                    const cached = channels.find(c => c.id === cachedId);
-                    if (cached) {
-                        bestChannel = cached;
-                        updateBestUI();
-                    }
-                }
-            } catch (e) {}
+        function updateBestUI() {
+            const ms = (bestChannel.latency && bestChannel.latency < 9999) ? bestChannel.latency + 'ms' : '优选';
+            const channelName = bestChannel.name; 
+            
+            el.bestName.textContent = `${channelName} (${ms})`;
+            
+            // 修复点：确保按钮文字在一行，使用 span 容器来保持字体大小和不换行
+            el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 <span class="text-base/loose font-semibold">${channelName}</span>`; 
+
+            if (!el.section.classList.contains('hidden')) renderRealChannels();
         }
         
-        function showToast(message, duration = 2000) { 
+        function showToast(message, duration = 2000) {
             el.toast.textContent = message;
             el.toast.classList.remove('opacity-0', 'pointer-events-none');
             el.toast.classList.add('opacity-100');
@@ -411,7 +343,7 @@
             }, duration);
         }
         
-        function pauseCountdown() { 
+        function pauseCountdown() {
             if (countdownInterval !== null) {
                 clearInterval(countdownInterval);
                 countdownInterval = null;
@@ -421,8 +353,8 @@
                 showToast("倒计时已暂停，请点击返回或图标继续", 3000); 
             }
         }
-        
-        function resumeCountdown() { 
+
+        function resumeCountdown() {
             if (isPaused) {
                 isPaused = false;
                 startCountdown();
@@ -430,8 +362,9 @@
                 showToast("倒计时已恢复", 1500);
             }
         }
-
-        window.showEmail = () => { 
+        
+        // 全局函数，确保按钮点击可用
+        window.showEmail = () => {
             if (!isPaused) {
                 pauseCountdown();
                 el.contactInfo.innerHTML = `<span class="text-gray-900 font-semibold transition-all duration-300"><i class="fa fa-envelope-o mr-2"></i> ${CONFIG.emailAddress}</span> <button class="text-sm text-primary ml-4 hover:underline" onclick="hideEmail()">点击返回</button>`;
@@ -439,13 +372,14 @@
                  hideEmail();
             }
         }
-        
+
+        // 全局函数，确保按钮点击可用
         window.hideEmail = () => {
             el.contactInfo.innerHTML = CONFIG.originalText;
             resumeCountdown();
         }
-        
-        function bindEvents() { 
+
+        function bindEvents() {
             el.skipBtn.addEventListener('click', () => {
                 if (countdownInterval) clearInterval(countdownInterval);
                 if (!el.skipBtn.disabled) doRedirect(bestChannel);
@@ -468,23 +402,20 @@
             });
         }
         
-        window.selectChannel = (id) => { 
+        // 全局函数，确保按钮点击可用
+        window.selectChannel = (id) => {
             const ch = channels.find(c => c.id === id);
             if (countdownInterval) clearInterval(countdownInterval);
             doRedirect(ch);
         };
-        
-        function doRedirect(channel) { 
+
+        function doRedirect(channel) {
             el.skipBtn.innerHTML = `<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 正在连接...`;
             el.skipBtn.classList.add('opacity-80', 'cursor-not-allowed');
             setTimeout(() => window.location.href = channel.url, 100);
         }
         
-        function renderSkeleton() { 
-            el.container.innerHTML = Array(4).fill(0).map(() => `<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200"></div><div class="space-y-2"><div class="w-24 h-4 rounded bg-gray-200"></div></div></div><div class="w-16 h-4 rounded bg-gray-200"></div></div></div>`).join('');
-        }
-        
-        function smoothTimeChange(newTime, totalTime) { 
+        function smoothTimeChange(newTime, totalTime) {
             if (countdownInterval) clearInterval(countdownInterval);
             el.countdown.dataset.total = totalTime;
             updateCircle(0);
@@ -492,11 +423,65 @@
             countdown = newTime;
             setTimeout(startCountdown, 400);
         }
-        
-        function startCoreLogic() {
-            startCountdown();
-            runBrowserSpeedTest();
+
+        function loadSmartCache() {
+            try {
+                const cachedId = localStorage.getItem('last_best_channel_id');
+                if (cachedId) {
+                    const cached = channels.find(c => c.id === cachedId);
+                    if (cached) {
+                        bestChannel = cached;
+                        updateBestUI();
+                    }
+                }
+            } catch (e) {}
         }
+
+        function renderSkeleton() {
+            el.container.innerHTML = Array(4).fill(0).map(() => `<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200"></div><div class="space-y-2"><div class="w-24 h-4 rounded bg-gray-200"></div></div></div><div class="w-16 h-4 rounded bg-gray-200"></div></div></div>`).join('');
+        }
+
+        function renderRealChannels() {
+            const anyOnline = channels.some(c => c.isOnline);
+            el.container.innerHTML = channels.map(c => {
+                let latClass = 'text-gray-400';
+                let latText = '检测中...';
+                
+                if (!isTesting && c.latency !== undefined) {
+                    if (!c.isOnline) { 
+                        latClass = 'text-red-500 font-medium'; 
+                        latText = '连接失败/超时'; 
+                    } else {
+                        if (c.latency < 100) latClass = 'text-green-500 font-bold';
+                        else if (c.latency < 300) latClass = 'text-green-600 font-medium';
+                        else if (c.latency < 800) latClass = 'text-yellow-600 font-medium';
+                        else latClass = 'text-red-500 font-medium';
+                        latText = c.latency + 'ms';
+                    }
+                }
+
+                const isBest = c.id === bestChannel.id;
+                const activeClass = isBest ? 'border-primary bg-blue-50/30 ring-1 ring-primary/20' : 'border-gray-100 hover:border-blue-200';
+                
+                return `<div class="bg-white rounded-2xl p-4 border ${activeClass} transition-all duration-200 cursor-pointer" onclick="selectChannel('${c.id}')"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary text-lg"><i class="fa ${c.icon}"></i></div><div><div class="flex items-center gap-2"><span class="font-semibold text-gray-800">${c.name}</span>${isBest ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-primary text-white">推荐</span>` : ''}</div><div class="text-xs text-gray-400 mt-0.5">${c.tag}</div></div></div><div class="flex items-center text-sm ${latClass}">${c.isOnline ? '<i class="fa fa-signal text-[10px] mr-1.5 opacity-60"></i>' : ''}${latText}</div></div></div>`;
+            }).join('');
+            
+            if (!anyOnline) {
+                el.skipBtn.disabled = true;
+                el.skipBtn.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i> 所有节点离线，请稍后再试`;
+                el.skipBtn.classList.add('bg-gray-400', 'hover:bg-gray-400');
+                
+                if (countdownInterval) clearInterval(countdownInterval);
+                el.countdown.textContent = '❌';
+                el.bestName.textContent = '网络中断';
+            } else {
+                el.skipBtn.disabled = false;
+                el.skipBtn.classList.remove('bg-gray-400', 'hover:bg-gray-400');
+            }
+
+            isTesting = false;
+        }
+
     </script>
 </body>
 </html>
