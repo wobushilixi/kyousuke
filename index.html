@@ -10,15 +10,16 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cloud.umami.is/script.js" data-website-id="358a65a0-0a10-4fcd-8f6d-651f44e721e2"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#007AFF', // Blue
+                        primary: '#007AFF',
                         dark: '#1D1D1F',
                         light: '#F5F5F7'
                     },
@@ -29,14 +30,13 @@
             }
         }
     </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .card-shadow { @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 border border-white/50 backdrop-blur-sm; }
-            .btn-style { @apply transition-all duration-200 active:scale-[0.98] focus:ring-4 focus:ring-primary/20 shadow-lg shadow-primary/20; }
-            .icon-btn { @apply w-10 h-10 rounded-full bg-white/70 border border-gray-200 hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-all duration-200 cursor-pointer text-lg; }
-        }
-    </style>
     <style>
+        /* 内联 CSS - 确保首屏样式快速加载 */
+        .card-shadow { box-shadow: 0 8px 30px rgb(0,0,0,0.04); transition: all 300ms; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(8px); }
+        .btn-style { transition: all 200ms; transform: scale(1); box-shadow: 0 4px 6px rgba(0, 122, 255, 0.2); }
+        .btn-style:active { transform: scale(0.98); }
+        .icon-btn { width: 40px; height: 40px; border-radius: 9999px; background-color: rgba(255,255,255,0.7); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; transition: all 200ms; cursor: pointer; font-size: 1.125rem; }
+        
         body { scroll-behavior: smooth; }
         .countdown-circle {
             stroke-dasharray: 283; 
@@ -152,7 +152,6 @@
         const el = {
             countdown: document.getElementById('countdown'),
             circle: document.getElementById('countdown-circle'),
-            // ... (其他元素省略)
             skipBtn: document.getElementById('skip-countdown'),
             manualBtn: document.getElementById('manual-select'),
             section: document.getElementById('channels'),
@@ -165,6 +164,7 @@
         // ---------------- PWA: Service Worker 注册 ----------------
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // Service Worker 脚本必须是外部文件: /sw.js
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then(reg => console.log('SW Registered:', reg.scope))
                     .catch(err => console.error('SW Registration Failed:', err));
@@ -179,11 +179,10 @@
             bindEvents();
         });
 
-        // ---------------- 4. 测速精度优化：5次测试取中位数平均 ----------------
+        // ---------------- 核心测速逻辑：5次测试取中位数平均 ----------------
         
         function pingChannel(url, signal) {
             const start = performance.now();
-            // 在 fetch 中使用 HEAD 方法和 no-cors 模式
             return fetch(url, { 
                 method: 'HEAD', 
                 mode: 'no-cors', 
@@ -192,7 +191,7 @@
             }).then(() => {
                 return performance.now() - start;
             }).catch(() => {
-                return Infinity; // 网络失败或超时
+                return Infinity;
             });
         }
 
@@ -200,25 +199,22 @@
             const promises = channels.map(async (channel) => {
                 const targetUrl = channel.url + (channel.url.includes('?') ? '&' : '?') + 't=' + Date.now();
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT); // 延长总超时
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT); 
                 
-                // 并行执行 5 次测试
                 const testPings = Array(CONFIG.TEST_COUNT).fill(0).map(() => pingChannel(targetUrl, controller.signal));
                 const allResults = await Promise.all(testPings);
                 clearTimeout(timeoutId);
 
                 const successfulPings = allResults
                     .filter(res => res !== Infinity)
-                    .sort((a, b) => a - b); // 升序排序
+                    .sort((a, b) => a - b);
 
                 if (successfulPings.length >= 3) {
-                    // 取中间 3 个值的平均数，去除最大和最小值
                     const middlePings = successfulPings.slice(1, successfulPings.length - 1); 
                     const avgLatency = middlePings.reduce((sum, val) => sum + val, 0) / middlePings.length;
                     channel.latency = Math.round(avgLatency);
                     channel.isOnline = true;
                 } else if (successfulPings.length > 0) {
-                    // 如果成功次数少于 3 次，但有成功的，仍取平均值
                     const avgLatency = successfulPings.reduce((sum, val) => sum + val, 0) / successfulPings.length;
                     channel.latency = Math.round(avgLatency);
                     channel.isOnline = true;
@@ -235,7 +231,7 @@
             localStorage.setItem('last_best_channel_id', bestChannel.id);
         }
         
-        // ---------------- 3. 动态颜色进阶 (TTFB Integration) ----------------
+        // ---------------- 动态颜色进阶 (TTFB Integration) ----------------
         function processResults() {
             const online = channels.filter(c => c.isOnline);
             if (online.length > 0) {
@@ -250,14 +246,45 @@
             }
             updateBestUI();
             
-            // ** TTFB Integration: 根据最优延迟设置速度等级 **
+            // TTFB Integration: 根据最优延迟设置速度等级
             if (bestChannel.isOnline && bestChannel.latency < 100) {
-                speedTier = 3; // 极速：延迟低于 100ms
+                speedTier = 3; // 极速
             } else if (bestChannel.isOnline && bestChannel.latency < 350) {
-                speedTier = 2; // 中等：延迟 100ms - 350ms
+                speedTier = 2; // 中等
             } else {
-                speedTier = 1; // 慢速/失败：延迟高于 350ms 或离线
+                speedTier = 1; // 慢速/失败
             }
+        }
+
+        function updateCircle(percent) {
+            const offset = 283 - (percent / 100) * 283;
+            el.circle.style.strokeDashoffset = offset;
+            
+            const total = parseInt(el.countdown.dataset.total || CONFIG.autoTime);
+            const remaining = Math.max(0, countdown);
+
+            let color;
+            
+            if (speedTier === 3) { 
+                if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.high; 
+                else color = CONFIG.colors.medium;
+            } else if (speedTier === 1) { 
+                if (remaining > Math.ceil(total * 0.5)) color = CONFIG.colors.medium; 
+                else color = CONFIG.colors.low;
+            } else { 
+                if (remaining > Math.ceil(total * 0.6)) color = CONFIG.colors.high;
+                else if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.medium;
+                else color = CONFIG.colors.low;
+            }
+            
+            el.circle.style.stroke = color;
+        }
+
+        // ---------------- UI/A11y/Toast/Helpers ----------------
+
+        function startCoreLogic() {
+            startCountdown();
+            runBrowserSpeedTest();
         }
 
         function startCountdown() {
@@ -278,32 +305,26 @@
             }, 1000);
         }
 
-        // 核心更新函数：同时更新进度和颜色（根据 speedTier 调整过渡）
-        function updateCircle(percent) {
-            const offset = 283 - (percent / 100) * 283;
-            el.circle.style.strokeDashoffset = offset;
-            
-            const total = parseInt(el.countdown.dataset.total || CONFIG.autoTime);
-            const remaining = Math.max(0, countdown);
-
-            let color;
-            
-            if (speedTier === 3) { // 极速通道: 只有在最后 20% 才变色
-                if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.high; 
-                else color = CONFIG.colors.medium;
-            } else if (speedTier === 1) { // 慢速/失败: 立即进入黄色，迅速变红
-                if (remaining > Math.ceil(total * 0.5)) color = CONFIG.colors.medium; 
-                else color = CONFIG.colors.low;
-            } else { // 中等通道 (默认): 经典三段式过渡
-                if (remaining > Math.ceil(total * 0.6)) color = CONFIG.colors.high;
-                else if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.medium;
-                else color = CONFIG.colors.low;
-            }
-            
-            el.circle.style.stroke = color;
+        function switchNumberAnim(val) {
+            el.countdown.classList.remove('count-active');
+            el.countdown.classList.add('count-exit');
+            setTimeout(() => {
+                el.countdown.textContent = val;
+                el.countdown.classList.remove('count-exit');
+                el.countdown.classList.add('count-enter');
+                requestAnimationFrame(() => {
+                    el.countdown.classList.remove('count-enter');
+                    el.countdown.classList.add('count-active');
+                });
+            }, 200);
         }
         
-        // ---------------- UI/A11y/Toast (其他函数与上一版一致) ----------------
+        function updateBestUI() {
+            const ms = (bestChannel.latency && bestChannel.latency < 9999) ? bestChannel.latency + 'ms' : '优选';
+            el.bestName.textContent = `${bestChannel.name} (${ms})`;
+            el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 ${bestChannel.name}`;
+            if (!el.section.classList.contains('hidden')) renderRealChannels();
+        }
         
         function showToast(message, duration = 2000) {
             el.toast.textContent = message;
@@ -335,19 +356,122 @@
             }
         }
         
-        // (省略 switchNumberAnim, smoothTimeChange, loadSmartCache, bindEvents, showEmail, hideEmail, selectChannel, doRedirect, renderSkeleton, renderRealChannels, updateBestUI 等其他函数，它们与上一版保持一致)
+        window.showEmail = () => {
+            if (!isPaused) {
+                pauseCountdown();
+                el.contactInfo.innerHTML = `<span class="text-gray-900 font-semibold transition-all duration-300"><i class="fa fa-envelope-o mr-2"></i> ${CONFIG.emailAddress}</span> <button class="text-sm text-primary ml-4 hover:underline" onclick="hideEmail()">点击返回</button>`;
+            } else {
+                 hideEmail();
+            }
+        }
+
+        window.hideEmail = () => {
+            el.contactInfo.innerHTML = CONFIG.originalText;
+            resumeCountdown();
+        }
+
+        function bindEvents() {
+            el.skipBtn.addEventListener('click', () => {
+                if (countdownInterval) clearInterval(countdownInterval);
+                if (!el.skipBtn.disabled) doRedirect(bestChannel);
+            });
+
+            el.manualBtn.addEventListener('click', () => {
+                const isHidden = el.section.classList.contains('hidden');
+                const newTime = isHidden ? CONFIG.manualTime : CONFIG.autoTime;
+                
+                if (isHidden) {
+                    el.section.classList.remove('hidden');
+                    el.manualBtn.innerHTML = `<i class="fa fa-times mr-2"></i> 收起列表`;
+                    renderRealChannels();
+                    smoothTimeChange(newTime, newTime); 
+                } else {
+                    el.section.classList.add('hidden');
+                    el.manualBtn.innerHTML = `<i class="fa fa-list-ul mr-2"></i> 手动选择`;
+                    smoothTimeChange(newTime, newTime);
+                }
+            });
+        }
         
-        // ⚠️ 保证关键函数存在，即使内容不变
-        window.showEmail = () => { /* ... */ };
-        window.hideEmail = () => { /* ... */ };
-        function loadSmartCache() { /* ... */ }
-        function switchNumberAnim(val) { /* ... */ }
-        function smoothTimeChange(newTime, totalTime) { /* ... */ }
-        function bindEvents() { /* ... */ }
-        window.selectChannel = (id) => { /* ... */ };
-        function doRedirect(channel) { /* ... */ }
-        function renderSkeleton() { /* ... */ }
-        function renderRealChannels() { /* ... */ }
+        window.selectChannel = (id) => {
+            const ch = channels.find(c => c.id === id);
+            if (countdownInterval) clearInterval(countdownInterval);
+            doRedirect(ch);
+        };
+
+        function doRedirect(channel) {
+            el.skipBtn.innerHTML = `<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 正在连接...`;
+            el.skipBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            setTimeout(() => window.location.href = channel.url, 100);
+        }
+        
+        function smoothTimeChange(newTime, totalTime) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            el.countdown.dataset.total = totalTime;
+            updateCircle(0);
+            switchNumberAnim(newTime);
+            countdown = newTime;
+            setTimeout(startCountdown, 400);
+        }
+
+        function loadSmartCache() {
+            try {
+                const cachedId = localStorage.getItem('last_best_channel_id');
+                if (cachedId) {
+                    const cached = channels.find(c => c.id === cachedId);
+                    if (cached) {
+                        bestChannel = cached;
+                        updateBestUI();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function renderSkeleton() {
+            el.container.innerHTML = Array(4).fill(0).map(() => `<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200"></div><div class="space-y-2"><div class="w-24 h-4 rounded bg-gray-200"></div></div></div><div class="w-16 h-4 rounded bg-gray-200"></div></div></div>`).join('');
+        }
+
+        function renderRealChannels() {
+            const anyOnline = channels.some(c => c.isOnline);
+            el.container.innerHTML = channels.map(c => {
+                let latClass = 'text-gray-400';
+                let latText = '检测中...';
+                
+                if (!isTesting && c.latency !== undefined) {
+                    if (!c.isOnline) { 
+                        latClass = 'text-red-500 font-medium'; 
+                        latText = '连接失败/超时'; 
+                    } else {
+                        if (c.latency < 100) latClass = 'text-green-500 font-bold';
+                        else if (c.latency < 300) latClass = 'text-green-600 font-medium';
+                        else if (c.latency < 800) latClass = 'text-yellow-600 font-medium';
+                        else latClass = 'text-red-500 font-medium';
+                        latText = c.latency + 'ms';
+                    }
+                }
+
+                const isBest = c.id === bestChannel.id;
+                const activeClass = isBest ? 'border-primary bg-blue-50/30 ring-1 ring-primary/20' : 'border-gray-100 hover:border-blue-200';
+                
+                return `<div class="bg-white rounded-2xl p-4 border ${activeClass} transition-all duration-200 cursor-pointer" onclick="selectChannel('${c.id}')"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary text-lg"><i class="fa ${c.icon}"></i></div><div><div class="flex items-center gap-2"><span class="font-semibold text-gray-800">${c.name}</span>${isBest ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-primary text-white">推荐</span>` : ''}</div><div class="text-xs text-gray-400 mt-0.5">${c.tag}</div></div></div><div class="flex items-center text-sm ${latClass}">${c.isOnline ? '<i class="fa fa-signal text-[10px] mr-1.5 opacity-60"></i>' : ''}${latText}</div></div></div>`;
+            }).join('');
+            
+            if (!anyOnline) {
+                el.skipBtn.disabled = true;
+                el.skipBtn.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i> 所有节点离线，请稍后再试`;
+                el.skipBtn.classList.add('bg-gray-400', 'hover:bg-gray-400');
+                
+                if (countdownInterval) clearInterval(countdownInterval);
+                el.countdown.textContent = '❌';
+                el.bestName.textContent = '网络中断';
+            } else {
+                el.skipBtn.disabled = false;
+                el.skipBtn.classList.remove('bg-gray-400', 'hover:bg-gray-400');
+            }
+
+            isTesting = false;
+        }
+
     </script>
 </body>
 </html>
