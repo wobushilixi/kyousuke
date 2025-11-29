@@ -32,27 +32,19 @@
             .btn-style {
                 @apply transition-all duration-200 active:scale-[0.98] focus:ring-4 focus:ring-primary/20 shadow-lg shadow-primary/20;
             }
+            .icon-btn {
+                @apply w-10 h-10 rounded-full bg-white/70 border border-gray-200 hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-all duration-200 cursor-pointer text-lg;
+            }
         }
     </style>
     <style>
         body { scroll-behavior: smooth; }
-        
-        /* 圆环动画 */
-        .countdown-circle {
-            stroke-dasharray: 283;
-            stroke-dashoffset: 283;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-            transition: stroke-dashoffset 1s linear;
-        }
-
-        /* 数字切换动画 */
+        .countdown-circle { stroke-dasharray: 283; stroke-dashoffset: 283; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s linear; }
         .number-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
         .count-val { display: inline-block; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .count-exit { opacity: 0; transform: translateY(-15px) scale(0.9); }
         .count-enter { opacity: 0; transform: translateY(15px) scale(1.1); }
         .count-active { opacity: 1; transform: translateY(0) scale(1); }
-
         .custom-logo { object-fit: cover; border-radius: 22%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
@@ -63,10 +55,18 @@
                 <img src="https://img.cdn1.vip/i/6921348cd5a96_1763783820.webp" alt="Logo" class="custom-logo w-full h-full" />
             </div>
             <h1 class="text-3xl md:text-4xl font-bold mb-3 tracking-tight text-gray-900">李喜的资源站</h1>
-            <p class="text-gray-500 max-w-md mx-auto mb-4 text-lg">智能检测 · 极速直达</p>
-            <div class="inline-flex items-center bg-white/80 backdrop-blur border border-gray-200/50 text-gray-600 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm">
-                <i class="fa fa-circle text-[10px] text-green-500 mr-2 animate-pulse"></i>
-                实时访问：<span id="visitor-count-value" class="ml-1 font-semibold text-gray-800">...</span>
+            <p class="text-gray-500 max-w-md mx-auto mb-4 text-lg" id="contact-info">
+                智能检测 · 极速直达
+            </p>
+            
+            <div class="flex justify-center items-center space-x-4">
+                <button class="icon-btn" onclick="showEmail()">
+                    <i class="fa fa-envelope"></i>
+                </button>
+                
+                <a href="https://qm.qq.com/q/LhZz1nJVGa" target="_blank" class="icon-btn">
+                    <i class="fa fa-qq"></i>
+                </a>
             </div>
         </header>
 
@@ -128,14 +128,17 @@
         const CONFIG = {
             autoTime: 5,
             manualTime: 15,
-            timeout: 3000 // 测速超时时间(ms)
+            timeout: 3000, 
+            emailAddress: "admin@kyou.xyz", // 您的邮箱地址
+            originalText: "智能检测 · 极速直达" // 恢复后的原文本
         };
 
         // ---------------- 全局变量 ----------------
         let bestChannel = channels[0];
         let countdown = CONFIG.autoTime;
-        let countdownInterval;
+        let countdownInterval = null;
         let isTesting = true;
+        let isPaused = false;
 
         const el = {
             countdown: document.getElementById('countdown'),
@@ -144,8 +147,8 @@
             manualBtn: document.getElementById('manual-select'),
             section: document.getElementById('channels'),
             container: document.getElementById('channels-container'),
-            visitor: document.getElementById('visitor-count-value'),
-            bestName: document.getElementById('best-channel-name')
+            bestName: document.getElementById('best-channel-name'),
+            contactInfo: document.getElementById('contact-info')
         };
 
         // ---------------- 初始化 ----------------
@@ -154,43 +157,26 @@
             renderSkeleton(); 
             startCoreLogic(); 
             bindEvents();
-            simulateVisitorCount();
+            // 移除 simulateVisitorCount() 调用
         });
 
-        function loadSmartCache() {
-            try {
-                const cachedId = localStorage.getItem('last_best_channel_id');
-                if (cachedId) {
-                    const cached = channels.find(c => c.id === cachedId);
-                    if (cached) {
-                        bestChannel = cached;
-                        updateBestUI();
-                    }
-                }
-            } catch (e) {}
-        }
+        // ---------------- 测速核心逻辑 ----------------
+        
+        // (省略 loadSmartCache, 测速逻辑与上一版本一致，只修改了 UI 反馈)
 
         async function startCoreLogic() {
             startCountdown();
-            // 立即开始测速
             await runBrowserSpeedTest();
         }
 
-        // ---------------- 🚀 核心：纯前端 fetch 测速 ----------------
         async function runBrowserSpeedTest() {
             const promises = channels.map(async (channel) => {
-                // 1. 构造带时间戳的 URL，防止缓存干扰测速
-                // 注意：只取域名根路径进行测试，避免页面体积影响
                 const targetUrl = channel.url + (channel.url.includes('?') ? '&' : '?') + 't=' + Date.now();
-                
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
-                
                 const startTime = performance.now();
                 
                 try {
-                    // mode: 'no-cors' 是关键。允许发送跨域请求，虽然拿不到内容，但能测通断和时间。
-                    // cache: 'no-store' 确保不读缓存
                     await fetch(targetUrl, { 
                         method: 'HEAD', 
                         mode: 'no-cors', 
@@ -205,18 +191,15 @@
                     channel.isOnline = true;
                     
                 } catch (error) {
-                    // 只有网络错误或超时才会进入这里
                     clearTimeout(timeoutId);
+                    // 任何网络错误或超时都视为连接失败
                     channel.latency = Infinity;
                     channel.isOnline = false;
                 }
-                
                 return channel;
             });
 
             await Promise.all(promises);
-            
-            // 测速完成，进行排序
             processResults();
             renderRealChannels();
             localStorage.setItem('last_best_channel_id', bestChannel.id);
@@ -227,23 +210,61 @@
             
             if (online.length > 0) {
                 online.sort((a, b) => {
-                    // 1. 优先考虑权重 (例如高防节点如果速度还行，可能优先)
-                    // 这里设定：如果权重差 > 20，则权重优先；否则速度优先
                     const weightDiff = b.weight - a.weight;
                     if (Math.abs(weightDiff) > 20) return weightDiff;
-                    
-                    // 2. 否则单纯看延迟
                     return a.latency - b.latency;
                 });
                 bestChannel = online[0];
+            } else {
+                // 如果所有节点都离线，默认选中第一个节点（但不跳转，除非用户手动点）
+                bestChannel = channels[0]; 
             }
-            // 如果全挂了，保留默认
             updateBestUI();
         }
 
-        // ---------------- UI 渲染与动画 (保持原样) ----------------
+        // ---------------- 邮件/暂停功能 ----------------
+
+        function pauseCountdown() {
+            if (countdownInterval !== null) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+                isPaused = true;
+                el.countdown.textContent = '⏸';
+                el.circle.style.strokeDashoffset = 0; // 圆环充满
+            }
+        }
+
+        function resumeCountdown() {
+            if (isPaused) {
+                isPaused = false;
+                startCountdown();
+                el.countdown.textContent = countdown;
+            }
+        }
+
+        window.showEmail = () => {
+            if (!isPaused) {
+                pauseCountdown();
+                el.contactInfo.innerHTML = `
+                    <span class="text-gray-900 font-semibold transition-all duration-300">
+                        <i class="fa fa-envelope-o mr-2"></i> ${CONFIG.emailAddress}
+                    </span>
+                    <button class="text-sm text-primary ml-4 hover:underline" onclick="hideEmail()">点击返回</button>
+                `;
+            } else {
+                 // 如果已经暂停，再次点击图标恢复倒计时 (可选逻辑)
+                hideEmail();
+            }
+        }
+
+        window.hideEmail = () => {
+            el.contactInfo.innerHTML = CONFIG.originalText;
+            resumeCountdown();
+        }
         
-        function renderSkeleton() {
+        // ---------------- UI 渲染 ----------------
+        
+        function renderSkeleton() { /* ... 保持原样 ... */
             el.container.innerHTML = Array(4).fill(0).map(() => `
                 <div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse">
                     <div class="flex items-center justify-between">
@@ -266,10 +287,10 @@
                 
                 if (!isTesting && c.latency !== undefined) {
                     if (!c.isOnline) { 
+                        // **修复点：使用更明确的文本**
                         latClass = 'text-red-500 font-medium'; 
-                        latText = '无法连接'; 
+                        latText = '连接失败/超时'; 
                     } else {
-                        // 根据延迟显示颜色
                         if (c.latency < 100) latClass = 'text-green-500 font-bold';
                         else if (c.latency < 300) latClass = 'text-green-600 font-medium';
                         else if (c.latency < 800) latClass = 'text-yellow-600 font-medium';
@@ -315,8 +336,23 @@
             if (!el.section.classList.contains('hidden')) renderRealChannels();
         }
 
+        // (省略 startCountdown, switchNumberAnim, updateCircle, smoothTimeChange, bindEvents, selectChannel, doRedirect 等其他功能函数，它们保持原样)
+        
+        function loadSmartCache() {
+            try {
+                const cachedId = localStorage.getItem('last_best_channel_id');
+                if (cachedId) {
+                    const cached = channels.find(c => c.id === cachedId);
+                    if (cached) {
+                        bestChannel = cached;
+                        updateBestUI();
+                    }
+                }
+            } catch (e) {}
+        }
+        
         function startCountdown() {
-            if (countdownInterval) clearInterval(countdownInterval);
+            if (countdownInterval !== null) clearInterval(countdownInterval);
             const total = parseInt(el.countdown.dataset.total || countdown);
             
             countdownInterval = setInterval(() => {
@@ -389,19 +425,6 @@
             el.skipBtn.innerHTML = `<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 正在连接...`;
             el.skipBtn.classList.add('opacity-80', 'cursor-not-allowed');
             setTimeout(() => window.location.href = channel.url, 100);
-        }
-
-        function simulateVisitorCount() {
-            const key = 'base_visitors';
-            let count = parseInt(localStorage.getItem(key) || 120 + Math.random() * 50);
-            localStorage.setItem(key, count);
-            const update = () => el.visitor.textContent = count.toLocaleString();
-            update();
-            setInterval(() => {
-                count += Math.floor(Math.random() * 3) - 1;
-                if (count < 100) count = 100;
-                update();
-            }, 5000);
         }
     </script>
 </body>
