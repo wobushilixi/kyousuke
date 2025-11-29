@@ -3,31 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title">智能通道优选 - 李喜的资源站</title>
-    
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com https://cloud.umami.is; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cloud.umami.is; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;">
-
-    <meta property="og:title" content="李喜的资源站 - 极速跳转">
-    <meta property="og:description" content="正在为您智能优选最佳通道，享受极速体验。">
-    <meta property="og:type" content="website">
+    <title>李喜的资源站 - 智能通道跳转</title>
     
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" as="style">
+    <link rel="preload" href="https://fonts.gstatic.com/s/inter/v12/UuT_YwI8F8E-gC2c-3zM4Q.woff2" as="font" type="font/woff2" crossorigin>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cloud.umami.is/script.js" data-website-id="358a65a0-0a10-4fcd-8f6d-651f44e721e2"></script>
-    
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" media="print" onload="this.media='all'" integrity="sha256-eZk3eNf3f5z1e/Xn3uJ3I6Z3Y4O4g5l5J4y6E5R5I5E=" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#007AFF',
+                        primary: '#007AFF', // Blue
                         dark: '#1D1D1F',
-                        light: '#F5F5F7',
-                        bgStart: '#e0f7fa', // 优化的背景起始色
-                        bgEnd: '#f1f8e9' // 优化的背景结束色
+                        light: '#F5F5F7'
                     },
                     fontFamily: {
                         sans: ['SF Pro Display', 'SF Pro Text', 'Inter', '-apple-system', 'sans-serif'],
@@ -37,34 +30,18 @@
         }
     </script>
     <style>
-        /* 界面优化: 移除背景色，使用轻微渐变 */
-        body { 
-            scroll-behavior: smooth; 
-            background: linear-gradient(135deg, theme('colors.bgStart'), theme('colors.bgEnd'));
-            min-height: 100vh;
-        }
-        
-        /* 界面优化: 增加卡片透明度 */
-        .card-shadow { 
-            box-shadow: 0 8px 30px rgb(0,0,0,0.08); 
-            transition: all 300ms; 
-            border: 1px solid rgba(255,255,255,0.7); 
-            backdrop-filter: blur(12px); 
-            background-color: rgba(255, 255, 255, 0.85); /* 提升透明度 */
-        }
-        
-        /* 界面优化: 修复按钮一行文字问题 */
+        /* 内联 CSS - 核心样式 */
+        .card-shadow { box-shadow: 0 8px 30px rgb(0,0,0,0.04); transition: all 300ms; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(8px); }
         .btn-style { 
             transition: all 200ms; 
             transform: scale(1); 
-            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.25);
-            white-space: nowrap; /* 确保文字不换行 */
-            padding: 14px 20px; /* 调整内边距 */
-            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 122, 255, 0.2); 
+            white-space: nowrap; /* 修复点：强制不换行 */
         }
         .btn-style:active { transform: scale(0.98); }
-        .icon-btn { width: 40px; height: 40px; border-radius: 9999px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; transition: all 200ms; cursor: pointer; font-size: 1.125rem; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 9999px; background-color: rgba(255,255,255,0.7); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; transition: all 200ms; cursor: pointer; font-size: 1.125rem; }
         
+        body { scroll-behavior: smooth; }
         .countdown-circle {
             stroke-dasharray: 283; 
             stroke-dashoffset: 283; 
@@ -73,21 +50,39 @@
             transition: stroke-dashoffset 1s linear, stroke 0.3s ease-in-out;
         }
         .number-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-        .count-val { display: inline-block; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .count-exit { opacity: 0; transform: translateY(-10px) scale(0.9); }
-        .count-enter { opacity: 0; transform: translateY(10px) scale(1.1); }
+        .count-val { display: inline-block; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .count-exit { opacity: 0; transform: translateY(-15px) scale(0.9); }
+        .count-enter { opacity: 0; transform: translateY(15px) scale(1.1); }
         .count-active { opacity: 1; transform: translateY(0) scale(1); }
+        .custom-logo { object-fit: cover; border-radius: 22%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
-<body>
-
-    <div id="toast-message" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none text-sm font-medium">倒计时已暂停</div>
+<body class="bg-light text-dark min-h-screen flex flex-col">
+    <div id="toast-message" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none text-sm font-medium">
+        倒计时已暂停
+    </div>
     
     <div class="container mx-auto px-4 py-12 md:py-20 max-w-4xl flex-grow">
         <header class="text-center mb-10">
-            </header>
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-white rounded-[22%] mb-6 shadow-sm p-1">
+                <img src="https://img.cdn1.vip/i/6921348cd5a96_1763783820.webp" alt="Logo" class="custom-logo w-full h-full" />
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold mb-3 tracking-tight text-gray-900">李喜的资源站</h1>
+            <p class="text-gray-500 max-w-md mx-auto mb-4 text-lg" id="contact-info">
+                智能检测 · 极速直达
+            </p>
+            
+            <div class="flex justify-center items-center space-x-4">
+                <button class="icon-btn" onclick="showEmail()" aria-label="显示管理员邮箱">
+                    <i class="fa fa-envelope"></i>
+                </button>
+                <a href="https://qm.qq.com/q/LhZz1nJVGa" target="_blank" class="icon-btn" aria-label="跳转到 QQ 群">
+                    <i class="fa fa-qq"></i>
+                </button>
+            </div>
+        </header>
 
-        <section class="rounded-3xl card-shadow p-6 md:p-10 mb-10 border border-white">
+        <section class="bg-white/80 backdrop-blur-md rounded-3xl card-shadow p-6 md:p-10 mb-10 border border-white">
             <div class="text-center mb-8">
                 <h2 class="text-xl font-semibold mb-6 text-gray-800">正在为您优选最佳节点</h2>
                 <div class="flex items-center justify-center mb-2">
@@ -107,10 +102,10 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
-                <button id="skip-countdown" class="flex-1 bg-primary text-white rounded-2xl font-semibold btn-style flex items-center justify-center" aria-label="立即跳过倒计时，进入推荐节点">
+                <button id="skip-countdown" class="flex-1 bg-primary text-white py-3.5 px-6 rounded-2xl font-semibold btn-style flex items-center justify-center text-lg" aria-label="立即跳过倒计时，进入最快推荐节点">
                     <i class="fa fa-rocket mr-2"></i> 立即跳转
                 </button>
-                <button id="manual-select" class="flex-1 bg-white border border-gray-200 text-gray-700 rounded-2xl font-semibold btn-style flex items-center justify-center hover:bg-gray-50" aria-label="手动查看并选择通道列表">
+                <button id="manual-select" class="flex-1 bg-white border border-gray-200 text-gray-700 py-3.5 px-6 rounded-2xl font-semibold btn-style flex items-center justify-center text-lg hover:bg-gray-50" aria-label="手动查看并选择通道列表">
                     <i class="fa fa-list-ul mr-2"></i> 手动选择
                 </button>
             </div>
@@ -129,6 +124,13 @@
 
     <script>
         // ---------------- 配置区域 ----------------
+        const channels = [
+            { id: 'main', name: '主站点 (直连)', url: 'https://xz.kyou.xyz/', tag: '推荐', icon: 'fa-server', weight: 100 },
+            { id: 'cloudflare', name: 'Cloudflare 加速', url: 'https://cloudflare.kyou.xyz/', tag: '全球CDN', icon: 'fa-cloud', weight: 50 },
+            { id: 'freecdn', name: '高防 CDN 节点', url: 'https://freecdn.kyou.xyz/', tag: '安全', icon: 'fa-shield', weight: 90 },
+            { id: 'optimized', name: '优选极速节点', url: 'https://cf.kyou.xyz/', tag: '极速', icon: 'fa-bolt', weight: 75 }
+        ];
+
         const CONFIG = {
             autoTime: 5,
             manualTime: 15,
@@ -140,25 +142,8 @@
                 medium: '#FFC000', // Yellow/Orange
                 low: '#FF3B30' // Red
             },
-            TEST_COUNT: 5, // 测速次数
-            AB_TEST_MODE: Math.random() < 0.5 ? 'A' : 'B', // IV. 15. A/B 测试 (50% 流量)
-            AB_TEST_TIME_A: 5,
-            AB_TEST_TIME_B: 3,
+            TEST_COUNT: 5 // 测速次数
         };
-        
-        // III. 11. 通道 URL 混淆 (Base64)
-        const encodedChannels = [
-            { id: 'main', name: '主站点 (直连)', url: 'aHR0cHM6Ly94ei5reW91Lnh5ei8=', tag: '推荐', icon: 'fa-server', weight: 100 },
-            { id: 'cloudflare', name: 'Cloudflare 加速', url: 'aHR0cHM6Ly9jbG91ZGZsYXJlLmt5b3UueHl6Lw==', tag: '全球CDN', icon: 'fa-cloud', weight: 50 },
-            { id: 'freecdn', name: '高防 CDN 节点', url: 'aHR0cHM6Ly9mcmVlY2RuLmt5b3UueHl6Lw==', tag: '安全', icon: 'fa-shield', weight: 90 },
-            { id: 'optimized', name: '优选极速节点', url: 'aHR0cHM6Ly9jZi5reW91Lnh5ei8=', tag: '极速', icon: 'fa-bolt', weight: 75 }
-        ];
-
-        // 解码 URL
-        const channels = encodedChannels.map(c => ({
-            ...c,
-            url: atob(c.url)
-        }));
 
         // ---------------- 全局变量 ----------------
         let bestChannel = channels[0];
@@ -189,7 +174,7 @@
             });
         }
         
-        // ---------------- 核心逻辑 ----------------
+        // ---------------- 初始化 ----------------
         document.addEventListener('DOMContentLoaded', () => {
             loadSmartCache(); 
             renderSkeleton(); 
@@ -197,35 +182,9 @@
             bindEvents();
         });
 
-        // II. 6. 客户端性能监控 (RUM) - 简单计时
-        function startCoreLogic() {
-            console.time("PerformanceTestDuration");
-            
-            // IV. 15. A/B 测试应用
-            const initialTime = CONFIG.AB_TEST_MODE === 'A' ? CONFIG.AB_TEST_TIME_A : CONFIG.AB_TEST_TIME_B;
-            el.countdown.dataset.total = initialTime;
-            countdown = initialTime;
-            el.countdown.textContent = initialTime;
-            
-            startCountdown();
-            runBrowserSpeedTest().finally(() => {
-                console.timeEnd("PerformanceTestDuration");
-                console.log(`[AB Test] Mode: ${CONFIG.AB_TEST_MODE}, Final Countdown Time: ${initialTime}s`);
-            });
-        }
+        // ---------------- 核心测速逻辑：5次测试取中位数平均 ----------------
         
-        // II. 7. 失败服务器日志 (SendBeacon)
-        function logFailure(url, errorType) {
-            if (navigator.sendBeacon) {
-                const data = JSON.stringify({ url, error: errorType, timestamp: Date.now() });
-                // 替换为您的实际日志接收API
-                navigator.sendBeacon('/api/log_ping_failure', new Blob([data], { type: 'application/json' }));
-            } else {
-                console.error("Beacon not supported. Failed to log:", errorType, url);
-            }
-        }
-
-        function pingChannel(url, signal, channelId) {
+        function pingChannel(url, signal) {
             const start = performance.now();
             return fetch(url, { 
                 method: 'HEAD', 
@@ -234,27 +193,18 @@
                 signal 
             }).then(() => {
                 return performance.now() - start;
-            }).catch(error => {
-                const errorType = error.name === 'AbortError' ? 'Timeout' : 'Network';
-                logFailure(url, `${channelId} ${errorType}`);
+            }).catch(() => {
                 return Infinity;
             });
         }
-        
+
         async function runBrowserSpeedTest() {
             const promises = channels.map(async (channel) => {
                 const targetUrl = channel.url + (channel.url.includes('?') ? '&' : '?') + 't=' + Date.now();
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT);
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT); 
                 
-                // II. 9. 测速策略动态调整 (简单实现: 稳定通道测试次数减半)
-                let actualTestCount = CONFIG.TEST_COUNT;
-                if (channel.lastVariance && channel.lastVariance < 20) {
-                     actualTestCount = Math.ceil(CONFIG.TEST_COUNT / 2);
-                     console.log(`[Optimization] Channel ${channel.id} is stable. Reducing test count to ${actualTestCount}.`);
-                }
-
-                const testPings = Array(actualTestCount).fill(0).map(() => pingChannel(targetUrl, controller.signal, channel.id));
+                const testPings = Array(CONFIG.TEST_COUNT).fill(0).map(() => pingChannel(targetUrl, controller.signal));
                 const allResults = await Promise.all(testPings);
                 clearTimeout(timeoutId);
 
@@ -265,22 +215,14 @@
                 if (successfulPings.length >= 3) {
                     const middlePings = successfulPings.slice(1, successfulPings.length - 1); 
                     const avgLatency = middlePings.reduce((sum, val) => sum + val, 0) / middlePings.length;
-                    
-                    // I. 5. 稳定性得分 (Stability Score)
-                    const variance = middlePings.length > 1 ? Math.max(...middlePings) - Math.min(...middlePings) : 0;
-                    channel.lastVariance = variance;
-                    
                     channel.latency = Math.round(avgLatency);
-                    channel.stabilityScore = Math.max(0, 100 - variance); // 稳定性评分 (0-100)
                     channel.isOnline = true;
                 } else if (successfulPings.length > 0) {
                     const avgLatency = successfulPings.reduce((sum, val) => sum + val, 0) / successfulPings.length;
                     channel.latency = Math.round(avgLatency);
-                    channel.stabilityScore = 50; // 较少数据，评分中等
                     channel.isOnline = true;
                 } else {
                     channel.latency = Infinity;
-                    channel.stabilityScore = 0;
                     channel.isOnline = false;
                 }
                 return channel;
@@ -292,15 +234,14 @@
             localStorage.setItem('last_best_channel_id', bestChannel.id);
         }
         
+        // ---------------- 动态颜色进阶 (TTFB Integration) ----------------
         function processResults() {
             const online = channels.filter(c => c.isOnline);
             if (online.length > 0) {
                 online.sort((a, b) => {
                     const weightDiff = b.weight - a.weight;
                     if (Math.abs(weightDiff) > 20) return weightDiff;
-                    // 优先考虑延迟，其次考虑稳定性
-                    if (a.latency !== b.latency) return a.latency - b.latency;
-                    return b.stabilityScore - a.stabilityScore; 
+                    return a.latency - b.latency;
                 });
                 bestChannel = online[0];
             } else {
@@ -317,22 +258,6 @@
             }
         }
 
-        // I. 1. 动态背景/氛围 (通过改变 body 渐变实现)
-        function updateDynamicBackground(tier) {
-            let startColor, endColor;
-            if (tier === 3) { // 极速: 蓝绿/浅蓝
-                startColor = '#e3f2fd'; // Light Blue
-                endColor = '#e8f5e9'; // Light Green
-            } else if (tier === 1) { // 慢速/失败: 暖色/浅灰
-                startColor = '#fff3e0'; // Light Orange
-                endColor = '#f5f5f5'; // Light Gray
-            } else { // 中等: 默认的清爽色
-                startColor = '#e0f7fa'; 
-                endColor = '#f1f8e9'; 
-            }
-            document.body.style.background = `linear-gradient(135deg, ${startColor}, ${endColor})`;
-        }
-        
         function updateCircle(percent) {
             const offset = 283 - (percent / 100) * 283;
             el.circle.style.strokeDashoffset = offset;
@@ -341,6 +266,7 @@
             const remaining = Math.max(0, countdown);
 
             let color;
+            
             if (speedTier === 3) { 
                 if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.high; 
                 else color = CONFIG.colors.medium;
@@ -354,95 +280,28 @@
             }
             
             el.circle.style.stroke = color;
-            
-            // I. 1. 调用背景更新
-            updateDynamicBackground(speedTier);
         }
 
-        // IV. 17. 动态 Open Graph 标签更新
-        function updateMetaTags() {
-            const title = `已优选 ${bestChannel.name} | 李喜的资源站`;
-            const desc = bestChannel.isOnline 
-                ? `您的最佳延迟为 ${bestChannel.latency}ms。点击立即跳转，享受极速体验！`
-                : `网络连接失败，但页面已离线缓存。请稍后再试。`;
+        // ---------------- UI/A11y/Toast/Helpers ----------------
 
-            document.getElementById('page-title').textContent = title;
-            document.querySelector('meta[property="og:title"]').setAttribute('content', title);
-            document.querySelector('meta[property="og:description"]').setAttribute('content', desc);
-        }
-        
         function updateBestUI() {
             const ms = (bestChannel.latency && bestChannel.latency < 9999) ? bestChannel.latency + 'ms' : '优选';
-            const channelName = bestChannel.name;
+            const channelName = bestChannel.name; // 获取通道名称
             
-            // UI Bug Fix: 将 Channel Name 放入 small 标签，确保按钮在一行
-            el.bestName.innerHTML = `${channelName} (${ms})`;
-            el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 <span class="text-sm font-light opacity-90 ml-1">${channelName}</span>`;
+            el.bestName.textContent = `${channelName} (${ms})`;
             
-            updateMetaTags(); // IV. 17.
+            // 修复点：确保按钮文字在一行，使用 Flex 居中，并将通道名称字体略微缩小
+            el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 <span class="text-base/loose font-semibold">${channelName}</span>`; 
+
             if (!el.section.classList.contains('hidden')) renderRealChannels();
-        }
-        
-        function bindEvents() {
-            el.skipBtn.addEventListener('click', () => {
-                if (countdownInterval) clearInterval(countdownInterval);
-                if (!el.skipBtn.disabled) {
-                    logUserAction('SkipCountdown', bestChannel.id); // IV. 16.
-                    if ('vibrate' in navigator) navigator.vibrate(50); // I. 3.
-                    doRedirect(bestChannel);
-                }
-            });
-
-            el.manualBtn.addEventListener('click', () => {
-                const isHidden = el.section.classList.contains('hidden');
-                const newTime = isHidden ? CONFIG.manualTime : CONFIG.autoTime;
-                
-                logUserAction(isHidden ? 'ManualSelect' : 'CollapseList', null); // IV. 16.
-                if ('vibrate' in navigator) navigator.vibrate(50); // I. 3.
-
-                if (isHidden) {
-                    el.section.classList.remove('hidden');
-                    el.manualBtn.innerHTML = `<i class="fa fa-times mr-2"></i> 收起列表`;
-                    renderRealChannels();
-                    smoothTimeChange(newTime, newTime); 
-                } else {
-                    el.section.classList.add('hidden');
-                    el.manualBtn.innerHTML = `<i class="fa fa-list-ul mr-2"></i> 手动选择`;
-                    smoothTimeChange(newTime, newTime);
-                }
-            });
-            
-            // II. 8. E2E 测试辅助钩子
-            window.E2E_STATUS = 'Ready'; 
-        }
-
-        // IV. 16. 详细 console 日志报告
-        function logUserAction(action, channelId = null) {
-            console.log(`[User Action] ${action} executed. Channel ID: ${channelId || 'N/A'}.`);
-        }
-        
-        // IV. 14. UTM 参数传递机制
-        function doRedirect(channel) {
-            el.skipBtn.innerHTML = `<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 正在连接...`;
-            el.skipBtn.classList.add('opacity-80', 'cursor-not-allowed');
-
-            const url = new URL(channel.url);
-            const params = new URLSearchParams(window.location.search);
-            
-            // 传递所有 URL 参数
-            params.forEach((value, key) => {
-                url.searchParams.set(key, value);
-            });
-
-            setTimeout(() => window.location.href = url.toString(), 100);
         }
 
         function renderRealChannels() {
             const anyOnline = channels.some(c => c.isOnline);
+
             el.container.innerHTML = channels.map(c => {
                 let latClass = 'text-gray-400';
                 let latText = '检测中...';
-                let scoreText = '';
                 
                 if (!isTesting && c.latency !== undefined) {
                     if (!c.isOnline) { 
@@ -454,51 +313,190 @@
                         else if (c.latency < 800) latClass = 'text-yellow-600 font-medium';
                         else latClass = 'text-red-500 font-medium';
                         latText = c.latency + 'ms';
-                        
-                        // I. 5. 稳定性得分显示
-                        scoreText = c.stabilityScore !== undefined ? ` (稳: ${c.stabilityScore.toFixed(0)})` : '';
                     }
                 }
 
                 const isBest = c.id === bestChannel.id;
                 const activeClass = isBest ? 'border-primary bg-blue-50/30 ring-1 ring-primary/20' : 'border-gray-100 hover:border-blue-200';
                 
-                return `<div class="bg-white rounded-2xl p-4 border ${activeClass} transition-all duration-200 cursor-pointer" onclick="selectChannel('${c.id}')"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary text-lg"><i class="fa ${c.icon}"></i></div><div><div class="flex items-center gap-2"><span class="font-semibold text-gray-800">${c.name}</span>${isBest ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-primary text-white">推荐</span>` : ''}</div><div class="text-xs text-gray-400 mt-0.5">${c.tag}</div></div></div><div class="flex items-center text-sm ${latClass}">${c.isOnline ? '<i class="fa fa-signal text-[10px] mr-1.5 opacity-60"></i>' : ''}${latText}${scoreText}</div></div></div>`;
+                return `
+                <div class="bg-white rounded-2xl p-4 border ${activeClass} transition-all duration-200 cursor-pointer" onclick="selectChannel('${c.id}')">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary text-lg">
+                                <i class="fa ${c.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-gray-800">${c.name}</span>
+                                    ${isBest ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-primary text-white">推荐</span>` : ''}
+                                </div>
+                                <div class="text-xs text-gray-400 mt-0.5">${c.tag}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center text-sm ${latClass}">
+                            ${c.isOnline ? '<i class="fa fa-signal text-[10px] mr-1.5 opacity-60"></i>' : ''}
+                            ${latText}
+                        </div>
+                    </div>
+                </div>
+                `;
             }).join('');
             
             if (!anyOnline) {
-                // UI 优化: 优化失败状态的按钮和文本
                 el.skipBtn.disabled = true;
-                el.skipBtn.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i> 无法连接，请检查网络`;
+                el.skipBtn.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i> 所有节点离线，请稍后再试`;
                 el.skipBtn.classList.add('bg-gray-400', 'hover:bg-gray-400');
                 
                 if (countdownInterval) clearInterval(countdownInterval);
                 el.countdown.textContent = '❌';
                 el.bestName.textContent = '网络中断';
-                updateMetaTags();
             } else {
-                el.skipBtn.disabled = false;
-                el.skipBtn.classList.remove('bg-gray-400', 'hover:bg-gray-400');
+                 el.skipBtn.disabled = false;
+                 el.skipBtn.classList.remove('bg-gray-400', 'hover:bg-gray-400');
             }
 
             isTesting = false;
-            if (window.E2E_STATUS) window.E2E_STATUS = 'Tested'; // II. 8.
         }
         
-        // (Other helper functions like startCountdown, switchNumberAnim, etc. omitted for brevity, but exist in the full code)
-        // ...
-        window.showEmail = () => { /* ... */ };
-        window.hideEmail = () => { /* ... */ };
-        window.selectChannel = (id) => { /* ... */ };
-        function startCountdown() { /* ... */ }
-        function switchNumberAnim(val) { /* ... */ }
-        function loadSmartCache() { /* ... */ }
-        function renderSkeleton() { /* ... */ }
-        function smoothTimeChange(newTime, totalTime) { /* ... */ }
-        function showToast(message, duration = 2000) { /* ... */ }
-        function pauseCountdown() { /* ... */ }
-        function resumeCountdown() { /* ... */ }
+        function startCountdown() {
+            if (countdownInterval !== null) clearInterval(countdownInterval);
+            const total = parseInt(el.countdown.dataset.total || countdown);
+            countdownInterval = setInterval(() => {
+                countdown--;
+                switchNumberAnim(countdown);
+                const percent = ((total - countdown) / total) * 100;
+                updateCircle(percent);
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    doRedirect(bestChannel);
+                }
+            }, 1000);
+        }
+        
+        function switchNumberAnim(val) { 
+            el.countdown.classList.remove('count-active');
+            el.countdown.classList.add('count-exit');
+            setTimeout(() => {
+                el.countdown.textContent = val;
+                el.countdown.classList.remove('count-exit');
+                el.countdown.classList.add('count-enter');
+                requestAnimationFrame(() => {
+                    el.countdown.classList.remove('count-enter');
+                    el.countdown.classList.add('count-active');
+                });
+            }, 200);
+        }
+        
+        function loadSmartCache() { 
+            try {
+                const cachedId = localStorage.getItem('last_best_channel_id');
+                if (cachedId) {
+                    const cached = channels.find(c => c.id === cachedId);
+                    if (cached) {
+                        bestChannel = cached;
+                        updateBestUI();
+                    }
+                }
+            } catch (e) {}
+        }
+        
+        function showToast(message, duration = 2000) { 
+            el.toast.textContent = message;
+            el.toast.classList.remove('opacity-0', 'pointer-events-none');
+            el.toast.classList.add('opacity-100');
+            setTimeout(() => {
+                el.toast.classList.remove('opacity-100');
+                el.toast.classList.add('opacity-0', 'pointer-events-none');
+            }, duration);
+        }
+        
+        function pauseCountdown() { 
+            if (countdownInterval !== null) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+                isPaused = true;
+                el.countdown.textContent = '⏸';
+                el.circle.style.strokeDashoffset = 0;
+                showToast("倒计时已暂停，请点击返回或图标继续", 3000); 
+            }
+        }
+        
+        function resumeCountdown() { 
+            if (isPaused) {
+                isPaused = false;
+                startCountdown();
+                el.countdown.textContent = countdown;
+                showToast("倒计时已恢复", 1500);
+            }
+        }
 
+        window.showEmail = () => { 
+            if (!isPaused) {
+                pauseCountdown();
+                el.contactInfo.innerHTML = `<span class="text-gray-900 font-semibold transition-all duration-300"><i class="fa fa-envelope-o mr-2"></i> ${CONFIG.emailAddress}</span> <button class="text-sm text-primary ml-4 hover:underline" onclick="hideEmail()">点击返回</button>`;
+            } else {
+                 hideEmail();
+            }
+        }
+        
+        window.hideEmail = () => {
+            el.contactInfo.innerHTML = CONFIG.originalText;
+            resumeCountdown();
+        }
+        
+        function bindEvents() { 
+            el.skipBtn.addEventListener('click', () => {
+                if (countdownInterval) clearInterval(countdownInterval);
+                if (!el.skipBtn.disabled) doRedirect(bestChannel);
+            });
+
+            el.manualBtn.addEventListener('click', () => {
+                const isHidden = el.section.classList.contains('hidden');
+                const newTime = isHidden ? CONFIG.manualTime : CONFIG.autoTime;
+                
+                if (isHidden) {
+                    el.section.classList.remove('hidden');
+                    el.manualBtn.innerHTML = `<i class="fa fa-times mr-2"></i> 收起列表`;
+                    renderRealChannels();
+                    smoothTimeChange(newTime, newTime); 
+                } else {
+                    el.section.classList.add('hidden');
+                    el.manualBtn.innerHTML = `<i class="fa fa-list-ul mr-2"></i> 手动选择`;
+                    smoothTimeChange(newTime, newTime);
+                }
+            });
+        }
+        
+        window.selectChannel = (id) => { 
+            const ch = channels.find(c => c.id === id);
+            if (countdownInterval) clearInterval(countdownInterval);
+            doRedirect(ch);
+        };
+        
+        function doRedirect(channel) { 
+            el.skipBtn.innerHTML = `<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 正在连接...`;
+            el.skipBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            setTimeout(() => window.location.href = channel.url, 100);
+        }
+        
+        function renderSkeleton() { 
+            el.container.innerHTML = Array(4).fill(0).map(() => `<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200"></div><div class="space-y-2"><div class="w-24 h-4 rounded bg-gray-200"></div></div></div><div class="w-16 h-4 rounded bg-gray-200"></div></div></div>`).join('');
+        }
+        
+        function smoothTimeChange(newTime, totalTime) { 
+            if (countdownInterval) clearInterval(countdownInterval);
+            el.countdown.dataset.total = totalTime;
+            updateCircle(0);
+            switchNumberAnim(newTime);
+            countdown = newTime;
+            setTimeout(startCountdown, 400);
+        }
+        
+        function startCoreLogic() {
+            startCountdown();
+            runBrowserSpeedTest();
+        }
     </script>
 </body>
 </html>
