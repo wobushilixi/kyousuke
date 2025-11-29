@@ -2,7 +2,7 @@
  * sw.js - Service Worker for PWA Offline Caching
  * 必须作为独立文件与 index.html 放在同一目录下
  */
-const CACHE_NAME = 'lyx-redirect-v1.0.2'; // 请更新版本号以触发新的缓存
+const CACHE_NAME = 'lyx-redirect-v1.0.1'; // 稳定版本号
 
 // 预缓存列表
 const urlsToCache = [
