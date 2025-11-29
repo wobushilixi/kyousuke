@@ -13,12 +13,12 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#007AFF',
+                        primary: '#007AFF', // Apple Blue
                         dark: '#1D1D1F',
-                        light: '#FFFFFF'
+                        light: '#F5F5F7'
                     },
                     fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        sans: ['SF Pro Display', 'SF Pro Text', 'Inter', '-apple-system', 'sans-serif'],
                     },
                 },
             }
@@ -27,428 +27,381 @@
     <style type="text/tailwindcss">
         @layer utilities {
             .card-shadow {
-                @apply shadow-xl shadow-gray-100/50 hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-300 border border-transparent hover:border-blue-100/50;
+                @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 border border-white/50 backdrop-blur-sm;
             }
             .btn-style {
-                @apply transition-all duration-200 active:scale-[0.99] focus:ring-4 focus:ring-primary/50;
+                @apply transition-all duration-200 active:scale-[0.98] focus:ring-4 focus:ring-primary/20 shadow-lg shadow-primary/20;
             }
         }
     </style>
     <style>
         body { scroll-behavior: smooth; }
+        
+        /* 圆环动画 */
         .countdown-circle {
             stroke-dasharray: 283;
             stroke-dashoffset: 283;
             transform: rotate(-90deg);
             transform-origin: 50% 50%;
-            transition: stroke-dashoffset 1s linear; /* 恢复线性过渡，使圆环更丝滑 */
-        }
-        .loading-spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .custom-logo { object-fit: cover; border-radius: 50%; border: 1px solid rgba(0, 122, 255, 0.1); }
-        .visitor-count { @apply inline-flex items-center bg-gray-100 text-dark px-3 py-1 rounded-full text-sm font-medium; }
-        
-        /* 修复后的数字过渡动画 */
-        .number-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .count-val {
-            display: inline-block;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: stroke-dashoffset 1s linear;
         }
 
-        .count-exit {
-            opacity: 0;
-            transform: translateY(-20px) scale(0.9);
-        }
-        
-        .count-enter {
-            opacity: 0;
-            transform: translateY(20px) scale(0.9);
-        }
-        
-        .count-active {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        /* 数字切换动画 */
+        .number-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+        .count-val { display: inline-block; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .count-exit { opacity: 0; transform: translateY(-15px) scale(0.9); }
+        .count-enter { opacity: 0; transform: translateY(15px) scale(1.1); }
+        .count-active { opacity: 1; transform: translateY(0) scale(1); }
+
+        .custom-logo { object-fit: cover; border-radius: 22%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
-<body class="bg-light text-dark min-h-screen">
-    <div class="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
+<body class="bg-light text-dark min-h-screen flex flex-col">
+    <div class="container mx-auto px-4 py-12 md:py-20 max-w-4xl flex-grow">
         <header class="text-center mb-10">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-primary/5 rounded-full mb-6 overflow-hidden">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-white rounded-[22%] mb-6 shadow-sm p-1">
                 <img src="https://img.cdn1.vip/i/6921348cd5a96_1763783820.webp" alt="Logo" class="custom-logo w-full h-full" />
             </div>
-            <h1 class="text-3xl md:text-4xl font-bold mb-3 tracking-tight">李喜的资源站</h1>
-            <p class="text-gray-500 max-w-md mx-auto mb-4 text-lg">智能通道，极致速度体验</p>
-            <div class="visitor-count">
-                <i class="fa fa-users mr-1"></i> 实时访问：<span id="visitor-count-value">0</span> 人
+            <h1 class="text-3xl md:text-4xl font-bold mb-3 tracking-tight text-gray-900">李喜的资源站</h1>
+            <p class="text-gray-500 max-w-md mx-auto mb-4 text-lg">智能检测 · 极速直达</p>
+            <div class="inline-flex items-center bg-white/80 backdrop-blur border border-gray-200/50 text-gray-600 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm">
+                <i class="fa fa-circle text-[10px] text-green-500 mr-2 animate-pulse"></i>
+                实时访问：<span id="visitor-count-value" class="ml-1 font-semibold text-gray-800">...</span>
             </div>
         </header>
 
-        <section class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-12">
+        <section class="bg-white/80 backdrop-blur-md rounded-3xl card-shadow p-6 md:p-10 mb-10 border border-white">
             <div class="text-center mb-8">
-                <h2 class="text-xl font-semibold mb-4 text-dark">正在自动优选最佳节点</h2>
-                <div class="flex items-center justify-center">
-                    <div class="relative mr-4 w-20 h-20">
+                <h2 class="text-xl font-semibold mb-6 text-gray-800">正在为您优选最佳节点</h2>
+                <div class="flex items-center justify-center mb-2">
+                    <div class="relative w-24 h-24">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="#E5E7EB" stroke-width="3"/>
-                            <circle id="countdown-circle" class="countdown-circle" cx="50" cy="50" r="45" fill="none" stroke="#007AFF" stroke-width="3"/>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#007AFF" />
+                                    <stop offset="100%" stop-color="#00C7BE" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#F3F4F6" stroke-width="4"/>
+                            <circle id="countdown-circle" class="countdown-circle" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient)" stroke-width="4" stroke-linecap="round"/>
                         </svg>
                         <div class="number-container">
-                            <span id="countdown" class="font-extrabold text-2xl text-dark count-val count-active">5</span>
+                            <span id="countdown" class="font-bold text-3xl text-gray-800 count-val count-active">5</span>
                         </div>
                     </div>
-                    <p class="text-gray-500 text-lg">秒后跳转至 <span id="best-channel-name" class="font-bold text-dark">最优通道</span></p>
                 </div>
-                <p id="geo-location" class="text-xs text-gray-400 mt-2 h-4"></p>
+                <p class="text-gray-500 text-lg">
+                    秒后跳转至 <span id="best-channel-name" class="font-bold text-primary transition-all duration-300">检测中...</span>
+                </p>
             </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button id="skip-countdown" class="flex-1 bg-primary text-white py-3 px-6 rounded-xl font-semibold btn-style flex items-center justify-center text-lg">
-                    <i class="fa fa-arrow-right mr-2"></i> 立即跳转
+
+            <div class="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+                <button id="skip-countdown" class="flex-1 bg-primary text-white py-3.5 px-6 rounded-2xl font-semibold btn-style flex items-center justify-center text-lg">
+                    <i class="fa fa-rocket mr-2"></i> 立即跳转
                 </button>
-                <button id="manual-select" class="flex-1 border border-gray-200 text-dark py-3 px-6 rounded-xl font-semibold btn-style flex items-center justify-center text-lg bg-gray-50 hover:bg-gray-100">
-                    <i class="fa fa-list mr-2"></i> 手动选择通道
+                <button id="manual-select" class="flex-1 bg-white border border-gray-200 text-gray-700 py-3.5 px-6 rounded-2xl font-semibold btn-style flex items-center justify-center text-lg hover:bg-gray-50">
+                    <i class="fa fa-list-ul mr-2"></i> 手动选择
                 </button>
             </div>
         </section>
 
-        <section id="channels" class="hidden mb-12">
-            <h2 class="text-xl font-semibold mb-6 text-center text-dark">通道详细延迟与选择</h2>
-            <div class="grid gap-4" id="channels-container">
-            </div>
+        <section id="channels" class="hidden mb-12 transition-all duration-500 ease-in-out">
+            <h2 class="text-lg font-semibold mb-5 text-center text-gray-700">通道状态详情</h2>
+            <div class="grid gap-4 md:grid-cols-1" id="channels-container">
+                </div>
         </section>
 
-        <footer class="text-center text-gray-500 text-sm mt-auto pt-10">
-            <div class="mb-4">
-                <a href="#" class="hover:text-primary transition-colors">关于我们</a>
-                <span class="mx-2 text-gray-300">|</span>
-                <a href="mailto:support@example.com" class="hover:text-primary transition-colors">联系支持</a>
-            </div>
+        <footer class="text-center text-gray-400 text-xs mt-auto">
             <p>&copy; 2024 李喜的资源站. All Rights Reserved.</p>
         </footer>
     </div>
 
     <script>
-        // 节点配置
+        // ---------------- 配置区域 ----------------
         const channels = [
-            { id: 'main', name: '主站点无CDN', url: 'https://xz.kyou.xyz/', tag: '主服务器', tagColor: 'bg-green-100 text-green-800', icon: 'fa-server', weight: 100 },
-            { id: 'cloudflare', name: 'Cloudflare节点', url: 'https://cloudflare.kyou.xyz/', tag: 'CDN加速', tagColor: 'bg-blue-100 text-blue-800', icon: 'fa-cloud', weight: 50 },
-            { id: 'freecdn', name: '高防cdn节点', url: 'https://freecdn.kyou.xyz/', tag: '高防CDN', tagColor: 'bg-blue-100 text-blue-800', icon: 'fa-cloud', weight: 90 },
-            { id: 'optimized', name: '优选高速节点', url: 'https://cf.kyou.xyz/', tag: '优选', tagColor: 'bg-purple-100 text-purple-800', icon: 'fa-star', weight: 75 }
+            { id: 'main', name: '主站点 (直连)', url: 'https://xz.kyou.xyz/', tag: '推荐', tagColor: 'bg-green-100 text-green-700', icon: 'fa-server', weight: 100 },
+            { id: 'cloudflare', name: 'Cloudflare 加速', url: 'https://cloudflare.kyou.xyz/', tag: '全球CDN', tagColor: 'bg-blue-100 text-blue-700', icon: 'fa-cloud', weight: 50 },
+            { id: 'freecdn', name: '高防 CDN 节点', url: 'https://freecdn.kyou.xyz/', tag: '安全', tagColor: 'bg-indigo-100 text-indigo-700', icon: 'fa-shield', weight: 90 },
+            { id: 'optimized', name: '优选极速节点', url: 'https://cf.kyou.xyz/', tag: '极速', tagColor: 'bg-purple-100 text-purple-700', icon: 'fa-bolt', weight: 75 }
         ];
 
-        const WORKER_API_URL = 'https://ping-service.sparkling-dust-c2bf.workers.dev/'; 
-        const AUTO_COUNTDOWN_TIME = 5;
-        const MANUAL_COUNTDOWN_TIME = 15;
+        const CONFIG = {
+            autoTime: 5,
+            manualTime: 15,
+            timeout: 3000 // 测速超时时间(ms)
+        };
 
-        // 全局变量
-        const mainChannel = channels.find(channel => channel.id === 'main');
-        let bestChannel = mainChannel;
-        const countdownElement = document.getElementById('countdown');
-        const countdownCircle = document.getElementById('countdown-circle');
-        const skipCountdownBtn = document.getElementById('skip-countdown');
-        const manualSelectBtn = document.getElementById('manual-select');
-        const channelsSection = document.getElementById('channels');
-        const channelsContainer = document.getElementById('channels-container');
-        const visitorCountElement = document.getElementById('visitor-count-value');
-        const bestChannelNameElement = document.getElementById('best-channel-name');
-        const geoLocationElement = document.getElementById('geo-location');
-        let countdown = AUTO_COUNTDOWN_TIME;
+        // ---------------- 全局变量 ----------------
+        let bestChannel = channels[0];
+        let countdown = CONFIG.autoTime;
         let countdownInterval;
-        let visitorCount = 0;
+        let isTesting = true;
 
+        const el = {
+            countdown: document.getElementById('countdown'),
+            circle: document.getElementById('countdown-circle'),
+            skipBtn: document.getElementById('skip-countdown'),
+            manualBtn: document.getElementById('manual-select'),
+            section: document.getElementById('channels'),
+            container: document.getElementById('channels-container'),
+            visitor: document.getElementById('visitor-count-value'),
+            bestName: document.getElementById('best-channel-name')
+        };
+
+        // ---------------- 初始化 ----------------
         document.addEventListener('DOMContentLoaded', () => {
-            renderChannels();
-            testAllChannels();
-            startCountdown();
+            loadSmartCache(); 
+            renderSkeleton(); 
+            startCoreLogic(); 
             bindEvents();
             simulateVisitorCount();
         });
 
-        function renderChannels() {
-            channelsContainer.innerHTML = channels.map(channel => `
-                <div id="channel-${channel.id}" 
-                     class="bg-white rounded-2xl p-5 card-shadow cursor-pointer transition-all duration-200"
-                     data-url="${channel.url}"
-                     onclick="handleChannelSelection('${channel.id}')">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="flex items-center">
-                            <i class="fa ${channel.icon} text-primary mr-3 text-lg w-6 text-center"></i>
-                            <div>
-                                <span class="font-semibold text-lg">${channel.name}</span>
-                                <span id="channel-tag-${channel.id}" class="text-xs px-2 py-0.5 rounded-full ${channel.tagColor} ml-2">${channel.tag}</span>
+        function loadSmartCache() {
+            try {
+                const cachedId = localStorage.getItem('last_best_channel_id');
+                if (cachedId) {
+                    const cached = channels.find(c => c.id === cachedId);
+                    if (cached) {
+                        bestChannel = cached;
+                        updateBestUI();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function startCoreLogic() {
+            startCountdown();
+            // 立即开始测速
+            await runBrowserSpeedTest();
+        }
+
+        // ---------------- 🚀 核心：纯前端 fetch 测速 ----------------
+        async function runBrowserSpeedTest() {
+            const promises = channels.map(async (channel) => {
+                // 1. 构造带时间戳的 URL，防止缓存干扰测速
+                // 注意：只取域名根路径进行测试，避免页面体积影响
+                const targetUrl = channel.url + (channel.url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
+                
+                const startTime = performance.now();
+                
+                try {
+                    // mode: 'no-cors' 是关键。允许发送跨域请求，虽然拿不到内容，但能测通断和时间。
+                    // cache: 'no-store' 确保不读缓存
+                    await fetch(targetUrl, { 
+                        method: 'HEAD', 
+                        mode: 'no-cors', 
+                        cache: 'no-store', 
+                        signal: controller.signal 
+                    });
+                    
+                    const endTime = performance.now();
+                    clearTimeout(timeoutId);
+                    
+                    channel.latency = Math.round(endTime - startTime);
+                    channel.isOnline = true;
+                    
+                } catch (error) {
+                    // 只有网络错误或超时才会进入这里
+                    clearTimeout(timeoutId);
+                    channel.latency = Infinity;
+                    channel.isOnline = false;
+                }
+                
+                return channel;
+            });
+
+            await Promise.all(promises);
+            
+            // 测速完成，进行排序
+            processResults();
+            renderRealChannels();
+            localStorage.setItem('last_best_channel_id', bestChannel.id);
+        }
+
+        function processResults() {
+            const online = channels.filter(c => c.isOnline);
+            
+            if (online.length > 0) {
+                online.sort((a, b) => {
+                    // 1. 优先考虑权重 (例如高防节点如果速度还行，可能优先)
+                    // 这里设定：如果权重差 > 20，则权重优先；否则速度优先
+                    const weightDiff = b.weight - a.weight;
+                    if (Math.abs(weightDiff) > 20) return weightDiff;
+                    
+                    // 2. 否则单纯看延迟
+                    return a.latency - b.latency;
+                });
+                bestChannel = online[0];
+            }
+            // 如果全挂了，保留默认
+            updateBestUI();
+        }
+
+        // ---------------- UI 渲染与动画 (保持原样) ----------------
+        
+        function renderSkeleton() {
+            el.container.innerHTML = Array(4).fill(0).map(() => `
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gray-200"></div>
+                            <div class="space-y-2">
+                                <div class="w-24 h-4 rounded bg-gray-200"></div>
                             </div>
                         </div>
-                        <div class="flex items-center text-sm text-gray-500">
-                            <span class="mr-4 loading-status-${channel.id} text-dark font-medium">
-                                <i class="fa fa-spinner loading-spinner mr-1 text-primary"></i> 检测中...
-                            </span>
-                            <span class="status-indicator-${channel.id}">
-                                <i class="fa fa-circle-o-notch loading-spinner mr-1"></i> 连接中...
-                            </span>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <span class="inline-block w-full bg-primary/10 text-primary text-center py-2 rounded-xl font-medium btn-style text-base">
-                            点击访问
-                        </span>
+                        <div class="w-16 h-4 rounded bg-gray-200"></div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // --- 核心逻辑优化：Worker 测试 + 本地降级 + Geo优选 ---
-        async function testAllChannels() {
-            const urls = channels.map(c => c.url);
-            let results = [];
-            let userCountry = '';
-
-            try {
-                // 1. 尝试 Worker 后端测速
-                console.log("正在使用 Cloudflare Worker 测速...");
-                const response = await fetch(WORKER_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ urls })
-                });
-
-                if (!response.ok) throw new Error('API Error');
+        function renderRealChannels() {
+            el.container.innerHTML = channels.map(c => {
+                let latClass = 'text-gray-400';
+                let latText = '检测中...';
                 
-                const data = await response.json();
-                results = data.results || [];
-                userCountry = data.geo || '';
-
-                if(userCountry) {
-                    geoLocationElement.textContent = `检测到您位于: ${userCountry} (已启用区域优选)`;
+                if (!isTesting && c.latency !== undefined) {
+                    if (!c.isOnline) { 
+                        latClass = 'text-red-500 font-medium'; 
+                        latText = '无法连接'; 
+                    } else {
+                        // 根据延迟显示颜色
+                        if (c.latency < 100) latClass = 'text-green-500 font-bold';
+                        else if (c.latency < 300) latClass = 'text-green-600 font-medium';
+                        else if (c.latency < 800) latClass = 'text-yellow-600 font-medium';
+                        else latClass = 'text-red-500 font-medium';
+                        
+                        latText = c.latency + 'ms';
+                    }
                 }
 
-            } catch (error) {
-                // 2. 失败降级：启动本地浏览器测速
-                console.warn("Worker API 失败，切换至本地测速模式:", error);
-                geoLocationElement.textContent = "自动优选服务连接受限，已切换至本地测速";
-                geoLocationElement.className = "text-xs text-yellow-600 mt-2 h-4";
-                results = await performLocalFallbackTest(urls);
-            }
-
-            processTestResults(results, userCountry);
-        }
-
-        // 本地测速 Fallback 函数 (模拟 ping)
-        async function performLocalFallbackTest(urls) {
-            const promises = urls.map(async (url) => {
-                const startTime = Date.now();
-                try {
-                    // 使用 no-cors 模式进行探测，虽然拿不到状态码，但能测通断时间
-                    await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
-                    const latency = Date.now() - startTime;
-                    return { url, latency, isOnline: true };
-                } catch (e) {
-                    return { url, latency: Infinity, isOnline: false };
-                }
-            });
-            return Promise.all(promises);
-        }
-
-        // 处理结果并应用 Geo 权重
-        function processTestResults(results, country) {
-            for (const result of results) {
-                const channel = channels.find(c => c.url === result.url);
-                if (!channel) continue;
-
-                channel.latency = result.latency || Infinity;
-                channel.isOnline = result.isOnline;
-
-                // --- Geo-Targeting 逻辑 ---
-                // 如果是国内用户 (CN)，给非 Cloudflare 节点增加隐形权重 (减少虚拟延迟以便被选中)
-                if (country === 'CN' && channel.id !== 'cloudflare' && channel.id !== 'optimized') {
-                    // 假设直连在 CN 环境下可能比 CF 更有体验优势（即使延迟数字稍高）
-                    // 这里我们简单地在排序时利用 channel.weight
-                    channel.weight += 20; 
-                }
+                const isBest = c.id === bestChannel.id;
+                const activeClass = isBest ? 'border-primary bg-blue-50/30 ring-1 ring-primary/20' : 'border-gray-100 hover:border-blue-200';
                 
-                updateChannelStatusUI(channel);
-            }
-
-            selectBestChannel();
+                return `
+                <div class="bg-white rounded-2xl p-4 border ${activeClass} transition-all duration-200 cursor-pointer" onclick="selectChannel('${c.id}')">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary text-lg">
+                                <i class="fa ${c.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-gray-800">${c.name}</span>
+                                    ${isBest ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-primary text-white">推荐</span>` : ''}
+                                </div>
+                                <div class="text-xs text-gray-400 mt-0.5">${c.tag}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center text-sm ${latClass}">
+                            ${c.isOnline ? '<i class="fa fa-signal text-[10px] mr-1.5 opacity-60"></i>' : ''}
+                            ${latText}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            isTesting = false;
         }
 
-        function updateChannelStatusUI(channel) {
-            const statusElement = document.querySelector(`.loading-status-${channel.id}`);
-            const indicatorElement = document.querySelector(`.status-indicator-${channel.id}`);
-            
-            let colorClass = 'text-red-500';
-            if (channel.isOnline && channel.latency < 200) colorClass = 'text-green-500';
-            else if (channel.isOnline && channel.latency < 500) colorClass = 'text-yellow-500';
-
-            if (channel.isOnline && channel.latency < Infinity) {
-                statusElement.innerHTML = `<i class="fa fa-bolt ${colorClass} mr-1"></i> ${channel.latency}ms`;
-                indicatorElement.innerHTML = `<i class="fa fa-check-circle ${colorClass} mr-1"></i> 在线`;
-            } else {
-                statusElement.innerHTML = `<i class="fa fa-times text-red-500 mr-1"></i> 失败`;
-                indicatorElement.innerHTML = `<i class="fa fa-times-circle text-red-500 mr-1"></i> 不可用`;
-            }
+        function updateBestUI() {
+            const ms = (bestChannel.latency && bestChannel.latency < 9999) ? bestChannel.latency + 'ms' : '优选';
+            el.bestName.textContent = `${bestChannel.name} (${ms})`;
+            el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 ${bestChannel.name}`;
+            if (!el.section.classList.contains('hidden')) renderRealChannels();
         }
 
-        function selectBestChannel() {
-            const onlineChannels = channels.filter(c => c.isOnline);
-            
-            if (onlineChannels.length > 0) {
-                onlineChannels.sort((a, b) => {
-                    // 1. 权重优先 (含 Geo 动态加权)
-                    if (b.weight !== a.weight) return b.weight - a.weight;
-                    // 2. 延迟优先
-                    return a.latency - b.latency;
-                });
-                bestChannel = onlineChannels[0];
-            } else {
-                bestChannel = mainChannel;
-            }
-            updateBestChannelUI();
-        }
-
-        function updateBestChannelUI() {
-            document.querySelectorAll('[id^="channel-"]').forEach(card => {
-                card.classList.remove('border-2', 'border-primary', 'shadow-inner');
-                const tag = document.getElementById(`channel-tag-${card.id.split('-')[1]}`);
-                if(tag) {
-                    tag.classList.remove('bg-primary/20', 'text-primary');
-                    const original = channels.find(c => c.id === card.id.split('-')[1]);
-                    if(original) tag.className = `text-xs px-2 py-0.5 rounded-full ${original.tagColor} ml-2`;
-                }
-            });
-
-            const bestCard = document.getElementById(`channel-${bestChannel.id}`);
-            if (bestCard) {
-                bestCard.classList.add('border-2', 'border-primary', 'shadow-inner');
-                const bestTag = document.getElementById(`channel-tag-${bestChannel.id}`);
-                if(bestTag) bestTag.className = `text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary ml-2`;
-            }
-
-            bestChannelNameElement.textContent = `${bestChannel.name}`;
-            skipCountdownBtn.innerHTML = `<i class="fa fa-arrow-right mr-2"></i> 立即跳转至 ${bestChannel.latency < Infinity ? bestChannel.name : '最优通道'}`;
-        }
-
-        // --- 修复的动画逻辑 ---
         function startCountdown() {
             if (countdownInterval) clearInterval(countdownInterval);
-            const totalTime = countdownElement.dataset.original || countdown;
+            const total = parseInt(el.countdown.dataset.total || countdown);
             
             countdownInterval = setInterval(() => {
                 countdown--;
-                smoothSwitchNumber(countdown); // 每一秒都调用平滑过渡
-                
-                const currentPercent = ((totalTime - countdown) / totalTime) * 100;
-                updateCircle(currentPercent);
-                
+                switchNumberAnim(countdown);
+                updateCircle((total - countdown) / total * 100);
+
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
-                    redirectToChannel(bestChannel);
+                    doRedirect(bestChannel);
                 }
             }, 1000);
         }
 
+        function switchNumberAnim(val) {
+            el.countdown.classList.remove('count-active');
+            el.countdown.classList.add('count-exit');
+            setTimeout(() => {
+                el.countdown.textContent = val;
+                el.countdown.classList.remove('count-exit');
+                el.countdown.classList.add('count-enter');
+                requestAnimationFrame(() => {
+                    el.countdown.classList.remove('count-enter');
+                    el.countdown.classList.add('count-active');
+                });
+            }, 200);
+        }
+
         function updateCircle(percent) {
-            const offset = 283 - (percent / 100) * 283;
-            countdownCircle.style.strokeDashoffset = offset;
+            el.circle.style.strokeDashoffset = 283 - (percent / 100) * 283;
         }
 
-        // 数字切换动画 (新版)
-        function smoothSwitchNumber(newValue) {
-            // 1. Exit 当前数字
-            countdownElement.classList.remove('count-active');
-            countdownElement.classList.add('count-exit');
-
-            setTimeout(() => {
-                // 2. 更改数值
-                countdownElement.textContent = newValue;
-                
-                // 3. 瞬间重置位置到下方 (Enter 状态)
-                countdownElement.classList.remove('count-exit');
-                countdownElement.classList.add('count-enter');
-                
-                // 4. 强制重绘
-                void countdownElement.offsetWidth;
-
-                // 5. 激活动画回到中间
-                countdownElement.classList.remove('count-enter');
-                countdownElement.classList.add('count-active');
-            }, 150); // 150ms 后切换，配合 CSS 动画时长
-        }
-
-        // 平滑切换倒计时总时长 (手动/自动切换时)
-        function smoothSwitchCountdown(currentVal, newTotal) {
+        function smoothTimeChange(newTime) {
             if (countdownInterval) clearInterval(countdownInterval);
-            
-            // 先执行一次数字切换动画
-            smoothSwitchNumber(newTotal);
-            
-            countdown = newTotal;
-            updateCircle(0); // 圆环归零
-            
-            setTimeout(() => {
-                startCountdown();
-            }, 300);
+            el.countdown.dataset.total = newTime;
+            updateCircle(0);
+            switchNumberAnim(newTime);
+            countdown = newTime;
+            setTimeout(startCountdown, 400);
         }
 
         function bindEvents() {
-            skipCountdownBtn.addEventListener('click', () => {
+            el.skipBtn.addEventListener('click', () => {
                 if (countdownInterval) clearInterval(countdownInterval);
-                redirectToChannel(bestChannel);
+                doRedirect(bestChannel);
             });
-            
-            manualSelectBtn.addEventListener('click', () => {
-                const isHidden = channelsSection.classList.contains('hidden');
-                const newTime = isHidden ? MANUAL_COUNTDOWN_TIME : AUTO_COUNTDOWN_TIME;
-                
+
+            el.manualBtn.addEventListener('click', () => {
+                const isHidden = el.section.classList.contains('hidden');
                 if (isHidden) {
-                    channelsSection.classList.remove('hidden');
-                    manualSelectBtn.innerHTML = '<i class="fa fa-times mr-2"></i> 关闭手动选择';
+                    el.section.classList.remove('hidden');
+                    el.manualBtn.innerHTML = `<i class="fa fa-times mr-2"></i> 收起列表`;
+                    renderRealChannels();
+                    smoothTimeChange(CONFIG.manualTime);
                 } else {
-                    channelsSection.classList.add('hidden');
-                    manualSelectBtn.innerHTML = '<i class="fa fa-list mr-2"></i> 手动选择通道';
+                    el.section.classList.add('hidden');
+                    el.manualBtn.innerHTML = `<i class="fa fa-list-ul mr-2"></i> 手动选择`;
+                    smoothTimeChange(CONFIG.autoTime);
                 }
-                
-                countdownElement.dataset.original = newTime;
-                smoothSwitchCountdown(countdown, newTime);
             });
         }
 
-        function handleChannelSelection(channelId) {
-            const selectedChannel = channels.find(c => c.id === channelId);
+        window.selectChannel = (id) => {
+            const ch = channels.find(c => c.id === id);
             if (countdownInterval) clearInterval(countdownInterval);
-            redirectToChannel(selectedChannel);
+            doRedirect(ch);
+        };
+
+        function doRedirect(channel) {
+            el.skipBtn.innerHTML = `<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 正在连接...`;
+            el.skipBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            setTimeout(() => window.location.href = channel.url, 100);
         }
 
-        function redirectToChannel(channel) {
-            skipCountdownBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 跳转中...';
-            skipCountdownBtn.disabled = true;
-            setTimeout(() => { window.location.href = channel.url; }, 300);
-        }
-        
         function simulateVisitorCount() {
-            const baseCount = parseInt(localStorage.getItem('baseVisitorCount') || 150 + Math.floor(Math.random() * 50));
-            localStorage.setItem('baseVisitorCount', baseCount);
-            visitorCount = baseCount + Math.floor(Math.random() * 10);
-            visitorCountElement.textContent = visitorCount;
-            
+            const key = 'base_visitors';
+            let count = parseInt(localStorage.getItem(key) || 120 + Math.random() * 50);
+            localStorage.setItem(key, count);
+            const update = () => el.visitor.textContent = count.toLocaleString();
+            update();
             setInterval(() => {
-                visitorCount += Math.floor(Math.random() * 5) - 2;
-                if (visitorCount < baseCount) visitorCount = baseCount;
-                visitorCountElement.style.opacity = 0;
-                setTimeout(() => {
-                    visitorCountElement.textContent = visitorCount;
-                    visitorCountElement.style.opacity = 1;
-                }, 500);
-            }, 10000);
+                count += Math.floor(Math.random() * 3) - 1;
+                if (count < 100) count = 100;
+                update();
+            }, 5000);
         }
     </script>
 </body>
