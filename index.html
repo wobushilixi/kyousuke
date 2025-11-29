@@ -47,7 +47,6 @@
             stroke-dashoffset: 283;
             transform: rotate(-90deg);
             transform-origin: 50% 50%;
-            /* 移除过渡，让圆环变化更平滑 */
             transition: none; 
         }
         .loading-spinner {
@@ -57,17 +56,25 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .count-animate {
-            /* 更自然的计数动画 */
-            transition: opacity 0.3s, transform 0.3s;
-        }
         .custom-logo {
             object-fit: cover;
             border-radius: 50%;
-            border: 1px solid rgba(0, 122, 255, 0.1); /* 浅边框 */
+            border: 1px solid rgba(0, 122, 255, 0.1); 
         }
         .visitor-count {
             @apply inline-flex items-center bg-gray-100 text-dark px-3 py-1 rounded-full text-sm font-medium;
+        }
+        
+        /* 改进后的跳秒过渡动画 */
+        .count-exit-animate {
+            transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+            opacity: 0;
+            transform: translate(-50%, -150%); /* 向上移出 */
+        }
+        .count-enter-animate {
+            transition: opacity 0.2s ease-out 0.2s, transform 0.2s ease-out 0.2s;
+            opacity: 1;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -125,7 +132,7 @@
     </div>
 
     <script>
-        // 节点配置
+        // 节点配置 - 已更新
         const channels = [
             { id: 'main', name: '主站点无CDN', url: 'https://xz.kyou.xyz/', tag: '主服务器', tagColor: 'bg-green-100 text-green-800', icon: 'fa-server', weight: 100 },
             { id: 'cloudflare', name: 'Cloudflare节点', url: 'https://cloudflare.kyou.xyz/', tag: 'CDN加速', tagColor: 'bg-blue-100 text-blue-800', icon: 'fa-cloud', weight: 50 },
@@ -135,6 +142,10 @@
 
         // 🚨 重要的 Worker API 地址：已根据用户提供的信息填入
         const WORKER_API_URL = 'https://ping-service.sparkling-dust-c2bf.workers.dev/'; 
+        
+        // 倒计时默认设置
+        const AUTO_COUNTDOWN_TIME = 5;
+        const MANUAL_COUNTDOWN_TIME = 15; // 心理学建议：延长至 15 秒
 
         // 全局变量
         const mainChannel = channels.find(channel => channel.id === 'main');
@@ -147,7 +158,7 @@
         const channelsContainer = document.getElementById('channels-container');
         const visitorCountElement = document.getElementById('visitor-count-value');
         const bestChannelNameElement = document.getElementById('best-channel-name');
-        let countdown = 5;
+        let countdown = AUTO_COUNTDOWN_TIME;
         let countdownInterval;
         let visitorCount = 0;
 
@@ -209,7 +220,7 @@
                     throw new Error('Worker API 返回错误');
                 }
 
-                const results = await response.json(); // [{url: '...', latency: 120, isOnline: true}, ...]
+                const results = await response.json(); 
 
                 // 处理并更新每个通道的状态
                 for (const result of results) {
@@ -222,9 +233,17 @@
                     const statusElement = document.querySelector(`.loading-status-${channel.id}`);
                     const indicatorElement = document.querySelector(`.status-indicator-${channel.id}`);
 
+                    // **优化：根据延迟给出颜色提示**
+                    let colorClass = 'text-red-500';
+                    if (channel.isOnline && channel.latency < 100) {
+                        colorClass = 'text-green-500'; // 优秀
+                    } else if (channel.isOnline && channel.latency < 300) {
+                        colorClass = 'text-yellow-500'; // 良好
+                    }
+
                     if (channel.isOnline && channel.latency < Infinity) {
-                        statusElement.innerHTML = `<i class="fa fa-bolt text-green-500 mr-1"></i> ${channel.latency}ms`;
-                        indicatorElement.innerHTML = `<i class="fa fa-check-circle text-green-500 mr-1"></i> 在线`;
+                        statusElement.innerHTML = `<i class="fa fa-bolt ${colorClass} mr-1"></i> ${channel.latency}ms`;
+                        indicatorElement.innerHTML = `<i class="fa fa-check-circle ${colorClass} mr-1"></i> 在线`;
                     } else {
                         statusElement.innerHTML = `<i class="fa fa-times text-red-500 mr-1"></i> 失败`;
                         indicatorElement.innerHTML = `<i class="fa fa-times-circle text-red-500 mr-1"></i> 不可用`;
@@ -247,7 +266,7 @@
 
             } catch (error) {
                 console.error("Worker API 调用失败，使用默认或本地测速:", error);
-                // 可以在这里实现一个本地 Fallback 测速，但当前保持使用默认主通道
+                // Worker 失败时，可以考虑添加一个本地 ping 测速作为降级方案，这里保持默认主通道。
             }
             
             // 标记 UI
@@ -257,14 +276,23 @@
         function updateBestChannelUI() {
             document.querySelectorAll('[id^="channel-"]').forEach(card => {
                 card.classList.remove('border-2', 'border-primary', 'shadow-inner'); // 清除旧标记
-                document.getElementById(`channel-tag-${card.id.split('-')[1]}`).classList.remove('bg-primary/20', 'text-primary');
+                const tagElement = document.getElementById(`channel-tag-${card.id.split('-')[1]}`);
+                // 确保移除 'text-primary' 和 'bg-primary/20'，恢复默认颜色
+                tagElement.classList.remove('bg-primary/20', 'text-primary');
+                // 恢复原始 tagColor
+                const originalChannel = channels.find(c => c.id === card.id.split('-')[1]);
+                if(originalChannel) {
+                    tagElement.className = `text-xs px-2 py-0.5 rounded-full ${originalChannel.tagColor} ml-2`;
+                }
             });
 
             const bestChannelCard = document.getElementById(`channel-${bestChannel.id}`);
             if (bestChannelCard) {
                 // 推荐样式：边框和略微不同的阴影
                 bestChannelCard.classList.add('border-2', 'border-primary', 'shadow-inner'); 
-                document.getElementById(`channel-tag-${bestChannel.id}`).classList.add('bg-primary/20', 'text-primary');
+                const bestTagElement = document.getElementById(`channel-tag-${bestChannel.id}`);
+                // 覆盖 tagColor 为突出显示
+                bestTagElement.className = `text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary ml-2`;
             }
 
             bestChannelNameElement.textContent = `${bestChannel.name} (${bestChannel.latency < Infinity ? bestChannel.latency + 'ms' : '优选'})`;
@@ -281,10 +309,9 @@
             countdownInterval = setInterval(() => {
                 countdown--;
                 
-                // 使用 CSS 过渡实现数字动画
-                countdownElement.classList.remove('count-animate');
+                // 移除动画类，确保下一秒更新时能再次触发动画
+                countdownElement.classList.remove('count-exit-animate', 'count-enter-animate');
                 void countdownElement.offsetWidth; // 强制重绘
-                countdownElement.classList.add('count-animate');
                 
                 countdownElement.textContent = countdown;
                 
@@ -313,17 +340,18 @@
             
             manualSelectBtn.addEventListener('click', () => {
                 const isHidden = channelsSection.classList.contains('hidden');
+                const newTime = isHidden ? MANUAL_COUNTDOWN_TIME : AUTO_COUNTDOWN_TIME;
+                
                 if (isHidden) {
                     channelsSection.classList.remove('hidden');
-                    countdownElement.dataset.original = 30; // 延长手动选择时间
-                    smoothSwitchCountdown(countdown, 30);
                     manualSelectBtn.innerHTML = '<i class="fa fa-times mr-2"></i> 关闭手动选择';
                 } else {
                     channelsSection.classList.add('hidden');
-                    countdownElement.dataset.original = 5; // 恢复自动跳转时间
-                    smoothSwitchCountdown(countdown, 5);
                     manualSelectBtn.innerHTML = '<i class="fa fa-list mr-2"></i> 手动选择通道';
                 }
+                
+                countdownElement.dataset.original = newTime;
+                smoothSwitchCountdown(countdown, newTime); // 调用优化后的过渡函数
             });
         }
 
@@ -339,25 +367,37 @@
             skipCountdownBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 跳转中...';
             skipCountdownBtn.disabled = true;
             
-            // 确保在 300ms 后跳转，让用户看到按钮状态变化
             setTimeout(() => {
                 window.location.href = channel.url;
             }, 300);
         }
         
-        // 平滑切换倒计时
+        // 改进的平滑切换倒计时动画
         function smoothSwitchCountdown(from, to) {
             if (countdownInterval) clearInterval(countdownInterval);
             
-            // 动画效果
-            countdownElement.classList.add('count-animate');
+            // 1. 旧数字退出动画
+            countdownElement.classList.add('count-exit-animate');
+            countdownElement.classList.remove('count-enter-animate');
+
             setTimeout(() => {
+                // 2. 更新数字并重置位置
                 countdown = to;
                 countdownElement.textContent = to;
-                countdownElement.classList.remove('count-animate');
+                
+                // 立即应用初始状态，为进入动画做准备
+                countdownElement.style.transform = 'translate(-50%, 50%)'; // 初始位置在下方
+
+                // 3. 强制重绘以应用新的 transform 初始值
+                void countdownElement.offsetWidth; 
+
+                // 4. 新数字进入动画
+                countdownElement.classList.remove('count-exit-animate');
+                countdownElement.classList.add('count-enter-animate');
+                
                 updateCircle(0); // 圆环归零
                 startCountdown();
-            }, 300);
+            }, 200); // 配合 CSS 退出动画时间
         }
 
         // 模拟访问计数（纯HTML版，无法持久化）
@@ -376,11 +416,11 @@
                 visitorCount += fluctuation;
                 if (visitorCount < baseCount) visitorCount = baseCount; // 不低于基础值
 
-                // 数字过渡动画
-                visitorCountElement.classList.add('count-animate');
+                // 这里保持简单的数字过渡，避免与核心倒计时动画冲突
+                visitorCountElement.style.opacity = 0;
                 setTimeout(() => {
                     visitorCountElement.textContent = visitorCount;
-                    visitorCountElement.classList.remove('count-animate');
+                    visitorCountElement.style.opacity = 1;
                 }, 500);
 
             }, 10000);
