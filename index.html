@@ -11,7 +11,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cloud.umami.is/script.js" data-website-id="358a65a0-0a10-4fcd-8f6d-651f44e721e2"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght(400;600;700)&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -36,7 +36,7 @@
             transition: all 200ms; 
             transform: scale(1); 
             box-shadow: 0 4px 6px rgba(0, 122, 255, 0.2); 
-            white-space: nowrap; /* 确保文字不换行 */
+            white-space: nowrap; 
         }
         .btn-style:active { transform: scale(0.98); }
         .icon-btn { width: 40px; height: 40px; border-radius: 9999px; background-color: rgba(255,255,255,0.7); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; transition: all 200ms; cursor: pointer; font-size: 1.125rem; }
@@ -97,7 +97,7 @@
                     </div>
                 </div>
                 <p class="text-gray-500 text-lg">
-                    秒后跳转至 <span id="best-channel-name" class="font-bold text-primary transition-all duration-300">检测中...</span>
+                    秒后跳转至 <span id="best-channel-name" class="font-bold text-primary transition-all duration-300">Worker 检测中...</span>
                 </p>
             </div>
 
@@ -124,18 +124,21 @@
 
     <script>
         // ---------------- 配置区域 ----------------
+        // 实际的跳转链接 (目标站点)
         const channels = [
-            // 现有通道 (权重相对 Worker 降低)
             { id: 'main', name: '主站点 (直连)', url: 'https://xz.kyou.xyz/', tag: '推荐', icon: 'fa-server', weight: 100 },
             { id: 'cloudflare', name: 'Cloudflare 加速', url: 'https://cloudflare.kyou.xyz/', tag: '全球CDN', icon: 'fa-cloud', weight: 50 },
             { id: 'freecdn', name: '高防 CDN 节点', url: 'https://freecdn.kyou.xyz/', tag: '安全', icon: 'fa-shield', weight: 90 },
             { id: 'optimized', name: '优选极速节点', url: 'https://cf.kyou.xyz/', tag: '极速', icon: 'fa-bolt', weight: 75 }
         ];
 
+        // 🚨 独立的 Worker 代理测速点 (客户端唯一请求目标)
+        const WORKER_PING_URL = 'https://ping0.kyou.xyz/';
+
         const CONFIG = {
             autoTime: 5,
             manualTime: 15,
-            timeout: 1500,  // 优化点：单次请求超时从 3000ms 降至 1500ms
+            timeout: 1500,  
             emailAddress: "admin@kyou.xyz", 
             originalText: "智能检测 · 极速直达",
             colors: {
@@ -143,7 +146,7 @@
                 medium: '#FFC000',
                 low: '#FF3B30'
             },
-            TEST_COUNT: 3 // 优化点：测速次数从 5 次减少到 3 次
+            TEST_COUNT: 3 
         };
 
         // ---------------- 全局变量 ----------------
@@ -183,53 +186,50 @@
             bindEvents();
         });
 
-        // ---------------- 核心测速逻辑：3次测试取平均 ----------------
-        
-        function pingChannel(url, signal) {
-            const start = performance.now();
-            return fetch(url, { 
-                method: 'HEAD', 
-                mode: 'no-cors', 
-                cache: 'no-store', 
-                signal 
-            }).then(() => {
-                return performance.now() - start;
-            }).catch(() => {
-                return Infinity;
-            });
-        }
+        // ---------------- 核心测速逻辑：请求 Worker API ----------------
 
         async function runBrowserSpeedTest() {
-            const promises = channels.map(async (channel) => {
-                const targetUrl = channel.url + (channel.url.includes('?') ? '&' : '?') + 't=' + Date.now();
-                const controller = new AbortController();
-                // 整体超时时间： TEST_COUNT * timeout (防止测试次数导致的过度等待)
-                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT * 2); 
+            isTesting = true;
+            // 确保带上 t= 参数，触发 Worker 的 API 模式
+            const targetUrl = WORKER_PING_URL + '?t=' + Date.now();
+            
+            try {
+                // 客户端只发送一个请求到 Worker
+                const response = await fetch(targetUrl, {
+                    method: 'GET', 
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) throw new Error('Worker returned non-200 status');
+
+                const data = await response.json();
                 
-                const testPings = Array(CONFIG.TEST_COUNT).fill(0).map(() => pingChannel(targetUrl, controller.signal));
-                const allResults = await Promise.all(testPings);
-                clearTimeout(timeoutId);
-
-                const successfulPings = allResults
-                    .filter(res => res !== Infinity)
-                    .sort((a, b) => a - b);
-
-                if (successfulPings.length >= 1) {
-                    // 使用所有成功的ping的平均值，简化逻辑，提高速度
-                    const avgLatency = successfulPings.reduce((sum, val) => sum + val, 0) / successfulPings.length;
-                    channel.latency = Math.round(avgLatency);
-                    channel.isOnline = true;
+                // 解析 Worker 返回的 JSON 结果
+                if (data.status === 'ok' && data.results) {
+                    
+                    // 将 Worker 测速结果映射到本地 channels 变量
+                    data.results.forEach(workerResult => {
+                        const localChannel = channels.find(c => c.id === workerResult.id);
+                        if (localChannel) {
+                            localChannel.latency = workerResult.latency !== Infinity ? workerResult.latency : Infinity;
+                            localChannel.isOnline = workerResult.isOnline;
+                        }
+                    });
+                    
+                    processResults();
+                    renderRealChannels();
+                    localStorage.setItem('last_best_channel_id', bestChannel.id);
                 } else {
-                    channel.latency = Infinity;
-                    channel.isOnline = false;
+                    throw new Error('Worker returned invalid data format');
                 }
-                return channel;
-            });
 
-            await Promise.all(promises);
-            processResults();
-            renderRealChannels();
-            localStorage.setItem('last_best_channel_id', bestChannel.id);
+            } catch (error) {
+                console.error("Worker测速失败:", error);
+                // Worker 失败，回退到默认缓存或第一个通道
+                channels.forEach(c => { c.isOnline = false; c.latency = Infinity; });
+                processResults();
+                renderRealChannels();
+            }
         }
         
         // ---------------- 动态颜色进阶 (TTFB Integration) ----------------
@@ -237,10 +237,8 @@
             const online = channels.filter(c => c.isOnline);
             if (online.length > 0) {
                 online.sort((a, b) => {
-                    // 权重优先：如果权重相差大于 20，则按权重排序
                     const weightDiff = b.weight - a.weight;
                     if (Math.abs(weightDiff) > 20) return weightDiff;
-                    // 否则，按延迟排序
                     return a.latency - b.latency;
                 });
                 bestChannel = online[0];
@@ -249,13 +247,12 @@
             }
             updateBestUI();
             
-            // 速度分级 (TTFB 动态颜色)
             if (bestChannel.isOnline && bestChannel.latency < 100) {
-                speedTier = 3; // 极速
+                speedTier = 3; 
             } else if (bestChannel.isOnline && bestChannel.latency < 350) {
-                speedTier = 2; // 中等
+                speedTier = 2; 
             } else {
-                speedTier = 1; // 较慢
+                speedTier = 1; 
             }
         }
 
@@ -268,7 +265,6 @@
 
             let color;
             
-            // 根据速度等级和剩余时间动态调整颜色
             if (speedTier === 3) { 
                 if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.high; 
                 else color = CONFIG.colors.medium;
@@ -284,11 +280,11 @@
             el.circle.style.stroke = color;
         }
 
-        // ---------------- UI/Helper Functions (确保它们全部存在) ----------------
+        // ---------------- UI/Helper Functions ----------------
 
         function startCoreLogic() {
             startCountdown();
-            runBrowserSpeedTest();
+            runBrowserSpeedTest(); 
         }
 
         function startCountdown() {
@@ -329,7 +325,6 @@
             
             el.bestName.textContent = `${channelName} (${ms})`;
             
-            // 修复点：确保按钮文字在一行，使用 span 容器来保持字体大小和不换行
             el.skipBtn.innerHTML = `<i class="fa fa-rocket mr-2"></i> 立即进入 <span class="text-base/loose font-semibold">${channelName}</span>`; 
 
             if (!el.section.classList.contains('hidden')) renderRealChannels();
@@ -365,7 +360,6 @@
             }
         }
         
-        // 全局函数，确保按钮点击可用
         window.showEmail = () => {
             if (!isPaused) {
                 pauseCountdown();
@@ -375,7 +369,6 @@
             }
         }
 
-        // 全局函数，确保按钮点击可用
         window.hideEmail = () => {
             el.contactInfo.innerHTML = CONFIG.originalText;
             resumeCountdown();
@@ -404,7 +397,6 @@
             });
         }
         
-        // 全局函数，确保按钮点击可用
         window.selectChannel = (id) => {
             const ch = channels.find(c => c.id === id);
             if (countdownInterval) clearInterval(countdownInterval);
@@ -447,7 +439,7 @@
             const anyOnline = channels.some(c => c.isOnline);
             el.container.innerHTML = channels.map(c => {
                 let latClass = 'text-gray-400';
-                let latText = '检测中...';
+                let latText = 'Worker测速中...';
                 
                 if (!isTesting && c.latency !== undefined) {
                     if (!c.isOnline) { 
