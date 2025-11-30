@@ -125,6 +125,10 @@
     <script>
         // ---------------- 配置区域 ----------------
         const channels = [
+            // 🚨 新增 Cloudflare Worker 测速点，作为最高优先级 
+            { id: 'cf_worker', name: 'Cloudflare Worker (极速)', url: 'https://ping0.kyou.xyz/', tag: 'Worker', icon: 'fa-check-circle', weight: 200 },
+            
+            // 现有通道 (权重相对 Worker 降低)
             { id: 'main', name: '主站点 (直连)', url: 'https://xz.kyou.xyz/', tag: '推荐', icon: 'fa-server', weight: 100 },
             { id: 'cloudflare', name: 'Cloudflare 加速', url: 'https://cloudflare.kyou.xyz/', tag: '全球CDN', icon: 'fa-cloud', weight: 50 },
             { id: 'freecdn', name: '高防 CDN 节点', url: 'https://freecdn.kyou.xyz/', tag: '安全', icon: 'fa-shield', weight: 90 },
@@ -134,7 +138,7 @@
         const CONFIG = {
             autoTime: 5,
             manualTime: 15,
-            timeout: 3000, 
+            timeout: 1500,  // 优化点：单次请求超时从 3000ms 降至 1500ms
             emailAddress: "admin@kyou.xyz", 
             originalText: "智能检测 · 极速直达",
             colors: {
@@ -142,7 +146,7 @@
                 medium: '#FFC000',
                 low: '#FF3B30'
             },
-            TEST_COUNT: 5
+            TEST_COUNT: 3 // 优化点：测速次数从 5 次减少到 3 次
         };
 
         // ---------------- 全局变量 ----------------
@@ -168,7 +172,6 @@
         // ---------------- PWA: Service Worker 注册 ----------------
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Service Worker 脚本必须是外部文件: /sw.js
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then(reg => console.log('SW Registered:', reg.scope))
                     .catch(err => console.error('SW Registration Failed:', err));
@@ -183,7 +186,8 @@
             bindEvents();
         });
 
-        // ---------------- 核心测速逻辑 ----------------
+        // ---------------- 核心测速逻辑：3次测试取平均 ----------------
+        
         function pingChannel(url, signal) {
             const start = performance.now();
             return fetch(url, { 
@@ -202,7 +206,8 @@
             const promises = channels.map(async (channel) => {
                 const targetUrl = channel.url + (channel.url.includes('?') ? '&' : '?') + 't=' + Date.now();
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT); 
+                // 整体超时时间： TEST_COUNT * timeout (防止测试次数导致的过度等待)
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout * CONFIG.TEST_COUNT * 2); 
                 
                 const testPings = Array(CONFIG.TEST_COUNT).fill(0).map(() => pingChannel(targetUrl, controller.signal));
                 const allResults = await Promise.all(testPings);
@@ -212,12 +217,8 @@
                     .filter(res => res !== Infinity)
                     .sort((a, b) => a - b);
 
-                if (successfulPings.length >= 3) {
-                    const middlePings = successfulPings.slice(1, successfulPings.length - 1); 
-                    const avgLatency = middlePings.reduce((sum, val) => sum + val, 0) / middlePings.length;
-                    channel.latency = Math.round(avgLatency);
-                    channel.isOnline = true;
-                } else if (successfulPings.length > 0) {
+                if (successfulPings.length >= 1) {
+                    // 使用所有成功的ping的平均值，简化逻辑，提高速度
                     const avgLatency = successfulPings.reduce((sum, val) => sum + val, 0) / successfulPings.length;
                     channel.latency = Math.round(avgLatency);
                     channel.isOnline = true;
@@ -234,12 +235,15 @@
             localStorage.setItem('last_best_channel_id', bestChannel.id);
         }
         
+        // ---------------- 动态颜色进阶 (TTFB Integration) ----------------
         function processResults() {
             const online = channels.filter(c => c.isOnline);
             if (online.length > 0) {
                 online.sort((a, b) => {
+                    // 权重优先：如果权重相差大于 20，则按权重排序
                     const weightDiff = b.weight - a.weight;
                     if (Math.abs(weightDiff) > 20) return weightDiff;
+                    // 否则，按延迟排序
                     return a.latency - b.latency;
                 });
                 bestChannel = online[0];
@@ -248,13 +252,13 @@
             }
             updateBestUI();
             
-            // TTFB 动态颜色逻辑
+            // 速度分级 (TTFB 动态颜色)
             if (bestChannel.isOnline && bestChannel.latency < 100) {
-                speedTier = 3; 
+                speedTier = 3; // 极速
             } else if (bestChannel.isOnline && bestChannel.latency < 350) {
-                speedTier = 2; 
+                speedTier = 2; // 中等
             } else {
-                speedTier = 1; 
+                speedTier = 1; // 较慢
             }
         }
 
@@ -267,6 +271,7 @@
 
             let color;
             
+            // 根据速度等级和剩余时间动态调整颜色
             if (speedTier === 3) { 
                 if (remaining > Math.ceil(total * 0.2)) color = CONFIG.colors.high; 
                 else color = CONFIG.colors.medium;
