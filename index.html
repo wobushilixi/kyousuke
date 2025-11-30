@@ -125,9 +125,6 @@
     <script>
         // ---------------- 配置区域 ----------------
         const channels = [
-            // 🚨 新增 Cloudflare Worker 测速点，作为最高优先级 
-            { id: 'cf_worker', name: 'Cloudflare Worker (极速)', url: 'https://ping0.kyou.xyz/', tag: 'Worker', icon: 'fa-check-circle', weight: 200 },
-            
             // 现有通道 (权重相对 Worker 降低)
             { id: 'main', name: '主站点 (直连)', url: 'https://xz.kyou.xyz/', tag: '推荐', icon: 'fa-server', weight: 100 },
             { id: 'cloudflare', name: 'Cloudflare 加速', url: 'https://cloudflare.kyou.xyz/', tag: '全球CDN', icon: 'fa-cloud', weight: 50 },
