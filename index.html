@@ -97,7 +97,7 @@
                     </div>
                 </div>
                 <p class="text-gray-500 text-lg">
-                    秒后跳转至 <span id="best-channel-name" class="font-bold text-primary transition-all duration-300">Worker 检测中...</span>
+                    秒后跳转至 <span id="best-channel-name" class="font-bold text-primary transition-all duration-300">浏览器检测中...</span>
                 </p>
             </div>
 
@@ -124,28 +124,26 @@
 
     <script>
         // ---------------- 配置区域 ----------------
-        // 实际的跳转链接 (目标站点)
         const channels = [
             { id: 'main', name: '主站点 (直连)', url: 'https://xz.kyou.xyz/', tag: '推荐', icon: 'fa-server', weight: 100 },
             { id: 'freecdn', name: '高防 CDN 节点', url: 'https://freecdn.kyou.xyz/', tag: '安全', icon: 'fa-shield', weight: 90 },
             { id: 'optimized', name: '优选极速节点', url: 'https://cf.kyou.xyz/', tag: '极速', icon: 'fa-bolt', weight: 75 }
         ];
 
-        // 🚨 独立的 Worker 代理测速点 (客户端唯一请求目标)
+        // WORKER_PING_URL 现在仅用于诊断目的，不再进行测速
         const WORKER_PING_URL = 'https://ping0.kyou.xyz/';
 
         const CONFIG = {
             autoTime: 5,
             manualTime: 15,
-            timeout: 1500,  
+            timeout: 2500,  // 客户端超时设置为 2.5秒
             emailAddress: "admin@kyou.xyz", 
             originalText: "智能检测 · 极速直达",
             colors: {
                 high: '#007AFF',
                 medium: '#FFC000',
                 low: '#FF3B30'
-            },
-            TEST_COUNT: 3 
+            }
         };
 
         // ---------------- 全局变量 ----------------
@@ -168,15 +166,6 @@
             toast: document.getElementById('toast-message') 
         };
 
-        // ---------------- PWA: Service Worker 注册 ----------------
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(reg => console.log('SW Registered:', reg.scope))
-                    .catch(err => console.error('SW Registration Failed:', err));
-            });
-        }
-        
         // ---------------- 初始化 ----------------
         document.addEventListener('DOMContentLoaded', () => {
             loadSmartCache(); 
@@ -185,53 +174,72 @@
             bindEvents();
         });
 
-        // ---------------- 核心测速逻辑：请求 Worker API ----------------
-
-        async function runBrowserSpeedTest() {
-            isTesting = true;
-            // 确保带上 t= 参数，触发 Worker 的 API 模式
-            const targetUrl = WORKER_PING_URL + '?t=' + Date.now();
+        // ---------------- 核心测速逻辑：客户端并发请求 ----------------
+        
+        // 客户端 Ping 函数：使用浏览器 fetch 进行 TTFB 测量
+        function clientPing(url, id) {
+            // 确保使用 HEAD 方法和 no-cors 模式，提高速度和兼容性
+            const targetUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+            const controller = new AbortController();
             
-            try {
-                // 客户端只发送一个请求到 Worker
-                const response = await fetch(targetUrl, {
-                    method: 'GET', 
-                    cache: 'no-store'
-                });
-
-                if (!response.ok) throw new Error('Worker returned non-200 status');
-
-                const data = await response.json();
-                
-                // 解析 Worker 返回的 JSON 结果
-                if (data.status === 'ok' && data.results) {
-                    
-                    // 将 Worker 测速结果映射到本地 channels 变量
-                    data.results.forEach(workerResult => {
-                        const localChannel = channels.find(c => c.id === workerResult.id);
-                        if (localChannel) {
-                            localChannel.latency = workerResult.latency !== Infinity ? workerResult.latency : Infinity;
-                            localChannel.isOnline = workerResult.isOnline;
-                        }
-                    });
-                    
-                    processResults();
-                    renderRealChannels();
-                    localStorage.setItem('last_best_channel_id', bestChannel.id);
-                } else {
-                    throw new Error('Worker returned invalid data format');
-                }
-
-            } catch (error) {
-                console.error("Worker测速失败:", error);
-                // Worker 失败，回退到默认缓存或第一个通道
-                channels.forEach(c => { c.isOnline = false; c.latency = Infinity; });
-                processResults();
-                renderRealChannels();
-            }
+            // 使用 CONFIG.timeout
+            const timeout = setTimeout(() => controller.abort(), CONFIG.timeout); 
+            
+            const start = Date.now();
+            return fetch(targetUrl, { 
+                method: 'HEAD', 
+                signal: controller.signal,
+                cache: 'no-store',
+                mode: 'no-cors' // 关键点: 允许跨域请求，但不检查响应内容
+            })
+            .then(response => {
+                clearTimeout(timeout);
+                // 在 no-cors 模式下，我们只关心请求是否成功完成，TTFB 已经测量
+                return { 
+                    id: id,
+                    latency: Date.now() - start,
+                    isOnline: true
+                };
+            })
+            .catch(error => {
+                clearTimeout(timeout);
+                // console.warn(`Client Ping failed for ${id}:`, error.message);
+                // Fetch 失败通常是网络错误、DNS 解析问题或超时
+                return { 
+                    id: id, 
+                    latency: Infinity, 
+                    isOnline: false 
+                };
+            });
         }
         
-        // ---------------- 动态颜色进阶 (TTFB Integration) ----------------
+        // 客户端并发测速主函数
+        async function runBrowserSpeedTest() {
+            isTesting = true;
+            el.bestName.textContent = '浏览器检测中...';
+            
+            // 并发执行所有通道的 clientPing
+            const testPromises = channels.map(c => clientPing(c.url, c.id));
+            
+            // 等待所有测速完成
+            const results = await Promise.all(testPromises);
+            
+            // 将结果映射回本地 channels 数组
+            results.forEach(result => {
+                const localChannel = channels.find(c => c.id === result.id);
+                if (localChannel) {
+                    localChannel.latency = result.latency;
+                    localChannel.isOnline = result.isOnline;
+                }
+            });
+
+            processResults();
+            renderRealChannels();
+            localStorage.setItem('last_best_channel_id', bestChannel.id);
+        }
+        
+        // ---------------- 辅助函数 (保持不变) ----------------
+
         function processResults() {
             const online = channels.filter(c => c.isOnline);
             if (online.length > 0) {
@@ -279,11 +287,9 @@
             el.circle.style.stroke = color;
         }
 
-        // ---------------- UI/Helper Functions ----------------
-
         function startCoreLogic() {
             startCountdown();
-            runBrowserSpeedTest(); 
+            runBrowserSpeedTest(); // ⚡ 客户端测速
         }
 
         function startCountdown() {
@@ -431,14 +437,14 @@
         }
 
         function renderSkeleton() {
-            el.container.innerHTML = Array(4).fill(0).map(() => `<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200"></div><div class="space-y-2"><div class="w-24 h-4 rounded bg-gray-200"></div></div></div><div class="w-16 h-4 rounded bg-gray-200"></div></div></div>`).join('');
+            el.container.innerHTML = Array(3).fill(0).map(() => `<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200"></div><div class="space-y-2"><div class="w-24 h-4 rounded bg-gray-200"></div></div></div><div class="w-16 h-4 rounded bg-gray-200"></div></div></div>`).join('');
         }
 
         function renderRealChannels() {
             const anyOnline = channels.some(c => c.isOnline);
             el.container.innerHTML = channels.map(c => {
                 let latClass = 'text-gray-400';
-                let latText = 'Worker测速中...';
+                let latText = '浏览器测速中...';
                 
                 if (!isTesting && c.latency !== undefined) {
                     if (!c.isOnline) { 
