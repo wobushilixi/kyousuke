@@ -1,59 +1,49 @@
 /**
- * sw.js - Service Worker for PWA Offline Caching
- * 必须作为独立文件与 index.html 放在同一目录下
+ * sw.js - iozz Minimalist Service Worker
  */
-const CACHE_NAME = 'lyx-redirect-v1.0.1'; 
-
-// 预缓存列表
-const urlsToCache = [
-    '/', 
-    'index.html',
-    'https://cdn.tailwindcss.com',
-    'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css',
-    'https://fonts.gstatic.com/s/inter/v12/UuT_YwI8F8E-gC2c-3zM4Q.woff2',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap',
-    'https://img.cdn1.vip/i/6921348cd5a96_1763783820.webp',
+const CACHE_NAME = 'iozz-v2.0';
+const ASSETS = [
+    '/',
+    '/index.html',
+    'https://img.cdn1.vip/i/6921348cd5a96_1763783820.webp' // 仅缓存 Logo
 ];
 
-// 安装阶段：缓存静态文件
+// Install: 立即激活并缓存核心文件
 self.addEventListener('install', event => {
+    self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                return cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'no-cache' })));
-            })
+        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
     );
 });
 
-// 激活阶段：清理旧版本缓存
+// Activate: 清理旧缓存
 self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        caches.keys().then(keys => Promise.all(
+            keys.map(key => {
+                if (key !== CACHE_NAME) return caches.delete(key);
+            })
+        )).then(() => self.clients.claim())
     );
 });
 
-// 抓取阶段：缓存优先策略 (Cache-First)
+// Fetch: 极速响应策略 (Stale-While-Revalidate 对于 HTML)
 self.addEventListener('fetch', event => {
-    // 忽略统计脚本和测速请求 (带有 ?t= 的请求)
-    if (event.request.url.includes('umami.is') || event.request.url.includes('t=')) {
-        return;
-    }
+    // 忽略测速请求
+    if (event.request.url.includes('t=')) return;
 
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                if (response) {
-                    return response;
+        caches.match(event.request).then(cachedResponse => {
+            // 如果有缓存，先返回缓存（极速）
+            const fetchPromise = fetch(event.request).then(networkResponse => {
+                // 后台更新缓存
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
                 }
-                return fetch(event.request);
-            })
+                return networkResponse;
+            });
+            return cachedResponse || fetchPromise;
+        })
     );
 });
