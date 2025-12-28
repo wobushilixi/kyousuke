@@ -125,13 +125,11 @@
     <script>
         // ---------------- 配置区域 ----------------
         const channels = [
-            { id: 'main', name: '香港EO', url: 'https://hk.qvq.pw/', tag: 'HK', icon: 'fa-server', weight: 90 },
+            { id: 'main', name: 'Edgeone', url: 'https://edgeone.qvq.pw/', tag: 'HK', icon: 'fa-server', weight: 90 },
             { id: 'dj', name: '东京EO', url: 'https://edge.qvq.pw/', tag: 'cloudflare', icon: 'fa-shield', weight: 90 },
             { id: 'asia', name: '亚太节点', url: 'https://file.qvq.pw/', tag: 'edgeone', icon: 'fa-bolt', weight: 90 }
         ];
 
-        // WORKER_PING_URL 现在仅用于诊断目的，不再进行测速
-        const WORKER_PING_URL = 'https://ping0.kyou.xyz/';
 
         const CONFIG = {
             autoTime: 5,
